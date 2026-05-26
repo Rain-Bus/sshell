@@ -16,6 +16,17 @@ use ratatui::{
 pub struct ImportView;
 
 impl View for ImportView {
+    fn title(&self) -> &'static str { "Import" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("j/k", "move"),
+            ("Space", "toggle"),
+            ("a/A", "all/none"),
+            ("Enter", "import"),
+            ("Esc", "cancel"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         draw_import(frame, app, area);
     }

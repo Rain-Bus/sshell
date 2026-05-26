@@ -1,16 +1,27 @@
-use crate::app::{App, AuthKind, CredFormField, CredFormState, Mode, TextEditing, char_len};
+use crate::app::{App, AuthKind, CredFormField, CredFormState, FormAction, Mode, char_len};
 use crate::ui::component::{FormRow, badge_span};
 use crate::ui::{GREEN, ORANGE};
 
-use super::View;
+use super::{View, handle_form_nav};
 
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
 
 pub struct CredFormView;
 
 impl View for CredFormView {
+    fn title(&self) -> &'static str { "Cred Editor" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("↑/↓", "move"),
+            ("Tab", "toggle"),
+            ("Enter", "save"),
+            ("Esc", "back"),
+            ("Ctrl+U", "clear"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         let form = &app.session.credentials.form;
         let is_new = form.edit_name.is_none();
@@ -71,7 +82,7 @@ impl View for CredFormView {
             }
         }
 
-        let subtitle = "Tab ▽  ↑ △  Enter save/toggle  Esc back  Ctrl+U clear";
+        let subtitle = "↓ ▽  ↑ △  Tab toggle  Enter save  Esc back  Ctrl+U clear";
         crate::ui::component::draw_form_list(frame, area, title, subtitle, rows);
     }
 
@@ -83,55 +94,15 @@ impl View for CredFormView {
 // ── Key handling ───────────────────────────────────────────────
 
 fn handle_cred_form(app: &mut App, key: KeyEvent) -> Result<()> {
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-
-    match key.code {
-        KeyCode::Esc => {
-            app.session.mode = Mode::Credentials;
+    if let Some(action) = handle_form_nav(&mut app.session.credentials.form, key) {
+        match action {
+            FormAction::Toggle => toggle_cred_field(&mut app.session.credentials.form),
+            FormAction::Save => match app.save_cred_form() {
+                Ok(()) => app.toast("saved", true),
+                Err(err) => app.toast(err.to_string(), false),
+            },
+            FormAction::Cancel => app.session.mode = Mode::Credentials,
         }
-
-        KeyCode::Tab | KeyCode::Down => {
-            app.session.credentials.form.next_field();
-        }
-        KeyCode::BackTab | KeyCode::Up => {
-            app.session.credentials.form.prev_field();
-        }
-
-        KeyCode::Enter => {
-            if app.session.credentials.form.active.is_toggle() {
-                toggle_cred_field(&mut app.session.credentials.form);
-            } else {
-                match app.save_cred_form() {
-                    Ok(()) => app.toast("saved", true),
-                    Err(err) => app.toast(err.to_string(), false),
-                }
-            }
-        }
-
-        KeyCode::Backspace => {
-            app.session.credentials.form.delete_char();
-        }
-        KeyCode::Left => app.session.credentials.form.move_cursor_left(),
-        KeyCode::Right => app.session.credentials.form.move_cursor_right(),
-        KeyCode::Home => app.session.credentials.form.cursor_home(),
-        KeyCode::End => app.session.credentials.form.cursor_end(),
-        KeyCode::Char('a') if ctrl => app.session.credentials.form.cursor_home(),
-        KeyCode::Char('e') if ctrl => app.session.credentials.form.cursor_end(),
-        KeyCode::Char('u') if ctrl => app.session.credentials.form.clear_field(),
-
-        KeyCode::Char(' ') => {
-            if app.session.credentials.form.active.is_toggle() {
-                toggle_cred_field(&mut app.session.credentials.form);
-            } else {
-                app.session.credentials.form.insert_char(' ');
-            }
-        }
-
-        KeyCode::Char(c) if !ctrl && !app.session.credentials.form.active.is_toggle() => {
-            app.session.credentials.form.insert_char(c);
-        }
-
-        _ => {}
     }
     Ok(())
 }

@@ -24,6 +24,15 @@ const ACTIONS: &[(&str, &str)] = &[
 pub struct ActionMenuView;
 
 impl View for ActionMenuView {
+    fn title(&self) -> &'static str { "Actions" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("j/k", "move"),
+            ("Enter", "select"),
+            ("Esc", "cancel"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, _app: &App, area: Rect) {
         let list_width = 52u16.min(area.width.saturating_sub(4));
         let list_height = (ACTIONS.len() as u16 + 4).min(area.height);

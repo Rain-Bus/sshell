@@ -1,4 +1,4 @@
-use super::{TextEditing, char_len};
+use super::{FormNav, TextEditing, char_len};
 use crate::app::AuthKind;
 use crate::config::{ConnectionProfile, ConnectionType, CredentialEntry, SshellConfig};
 
@@ -209,6 +209,13 @@ impl FormState {
             self.cursor = char_len(self.active_text());
         }
     }
+}
+
+impl FormNav for FormState {
+    fn nav_next(&mut self) { self.next_field(); }
+    fn nav_prev(&mut self) { self.prev_field(); }
+    fn active_is_toggle(&self) -> bool { self.active.is_toggle() }
+    fn active_is_text(&self) -> bool { self.active.is_text() }
 }
 
 impl TextEditing for FormState {

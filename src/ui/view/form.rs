@@ -1,16 +1,27 @@
-use crate::app::{App, AuthKind, FormField, FormState, Mode, TextEditing, char_len};
+use crate::app::{App, AuthKind, FormAction, FormField, FormState, Mode, char_len};
 use crate::ui::component::{FormRow, badge_span};
 use crate::ui::{ACCENT, GREEN, ORANGE, PURPLE, RED};
 
-use super::View;
+use super::{View, handle_form_nav};
 
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
 
 pub struct FormView;
 
 impl View for FormView {
+    fn title(&self) -> &'static str { "Editor" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("↑/↓", "move"),
+            ("Tab", "toggle"),
+            ("Enter", "save"),
+            ("Esc", "cancel"),
+            ("Ctrl+U", "clear"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         let form = &app.session.form;
         let fields = form.visible_fields();
@@ -88,7 +99,7 @@ impl View for FormView {
             }
         }
 
-        let subtitle = "Tab ▽  ↑ △  Enter save/toggle  Esc cancel  Ctrl+U clear";
+        let subtitle = "↓ ▽  ↑ △  Tab toggle  Enter save  Esc cancel  Ctrl+U clear";
         crate::ui::component::draw_form_list(frame, area, title, subtitle, rows);
     }
 
@@ -100,61 +111,15 @@ impl View for FormView {
 // ── Key handling ───────────────────────────────────────────────
 
 fn handle_form(app: &mut App, key: KeyEvent) -> Result<()> {
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-
-    match key.code {
-        KeyCode::Esc => app.session.mode = Mode::Home,
-
-        KeyCode::Tab | KeyCode::Down => {
-            app.session.form.next_field();
+    if let Some(action) = handle_form_nav(&mut app.session.form, key) {
+        match action {
+            FormAction::Toggle => toggle_field(&mut app.session.form),
+            FormAction::Save => match app.save_form() {
+                Ok(()) => app.toast("saved", true),
+                Err(err) => app.toast(err.to_string(), false),
+            },
+            FormAction::Cancel => app.session.mode = Mode::Home,
         }
-        KeyCode::BackTab | KeyCode::Up => {
-            app.session.form.prev_field();
-        }
-
-        KeyCode::Enter => {
-            if app.session.form.active.is_toggle() {
-                toggle_field(&mut app.session.form);
-            } else {
-                match app.save_form() {
-                    Ok(()) => app.toast("saved", true),
-                    Err(err) => app.toast(err.to_string(), false),
-                }
-            }
-        }
-
-        KeyCode::Backspace => {
-            app.session.form.delete_char();
-        }
-        KeyCode::Delete => {
-            app.session.form.delete_next_char();
-        }
-        KeyCode::Left => {
-            app.session.form.move_cursor_left();
-        }
-        KeyCode::Right => {
-            app.session.form.move_cursor_right();
-        }
-        KeyCode::Home => app.session.form.cursor_home(),
-        KeyCode::End => app.session.form.cursor_end(),
-
-        KeyCode::Char('a') if ctrl => app.session.form.cursor_home(),
-        KeyCode::Char('e') if ctrl => app.session.form.cursor_end(),
-        KeyCode::Char('u') if ctrl => app.session.form.clear_field(),
-
-        KeyCode::Char(' ') => {
-            if app.session.form.active.is_toggle() {
-                toggle_field(&mut app.session.form);
-            } else {
-                app.session.form.insert_char(' ');
-            }
-        }
-
-        KeyCode::Char(c) if !ctrl && !app.session.form.active.is_toggle() => {
-            app.session.form.insert_char(c);
-        }
-
-        _ => {}
     }
     Ok(())
 }

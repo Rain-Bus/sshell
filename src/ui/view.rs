@@ -6,9 +6,9 @@ mod home_list;
 mod import;
 mod settings;
 
-use crate::app::App;
+use crate::app::{App, FormAction, FormNav};
 use anyhow::Result;
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -19,6 +19,12 @@ use ratatui::{
 pub trait View {
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect);
     fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()>;
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![]
+    }
+    fn title(&self) -> &'static str {
+        ""
+    }
 }
 
 pub use action_menu::ActionMenuView;
@@ -45,4 +51,31 @@ pub fn scroll_rows<'a>(rows: Vec<Row<'a>>, selected: usize, area_height: u16) ->
         selected - visible / 2
     };
     rows.into_iter().skip(scroll).take(visible).collect()
+}
+
+/// Common form key handler. Returns Some(action) for Toggle/Save/Cancel,
+/// None for text-editing and navigation keys that are fully handled here.
+pub fn handle_form_nav<F: FormNav>(form: &mut F, key: KeyEvent) -> Option<FormAction> {
+    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+
+    match key.code {
+        KeyCode::Down => { form.nav_next(); None }
+        KeyCode::Up => { form.nav_prev(); None }
+        KeyCode::Tab if form.active_is_toggle() => Some(FormAction::Toggle),
+        KeyCode::Enter => Some(FormAction::Save),
+        KeyCode::Esc => Some(FormAction::Cancel),
+
+        KeyCode::Backspace if form.active_is_text() => { form.delete_char(); None }
+        KeyCode::Delete if form.active_is_text() => { form.delete_next_char(); None }
+        KeyCode::Left if form.active_is_text() => { form.move_cursor_left(); None }
+        KeyCode::Right if form.active_is_text() => { form.move_cursor_right(); None }
+        KeyCode::Home if form.active_is_text() => { form.cursor_home(); None }
+        KeyCode::End if form.active_is_text() => { form.cursor_end(); None }
+        KeyCode::Char('a') if ctrl && form.active_is_text() => { form.cursor_home(); None }
+        KeyCode::Char('e') if ctrl && form.active_is_text() => { form.cursor_end(); None }
+        KeyCode::Char('u') if ctrl && form.active_is_text() => { form.clear_field(); None }
+        KeyCode::Char(' ') if form.active_is_text() => { form.insert_char(' '); None }
+        KeyCode::Char(c) if !ctrl && form.active_is_text() => { form.insert_char(c); None }
+        _ => None,
+    }
 }

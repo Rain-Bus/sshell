@@ -1,4 +1,4 @@
-use crate::app::{App, Mode};
+use crate::app::App;
 use crate::config::SyncBackend;
 use crate::ui::{ACCENT, BG, BLUE, DIM_BORDER, GREEN, MUTED, ORANGE, PANEL, PURPLE, TEXT};
 use ratatui::{
@@ -8,19 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 
-pub fn draw_header(frame: &mut ratatui::Frame<'_>, app: &App, area: Rect) {
-    let mode = match app.session.mode {
-        Mode::Home => "Home",
-        Mode::ActionMenu => "Actions",
-        Mode::Search => "Search",
-        Mode::QuickSelect => "Quick Select",
-        Mode::Form => "Editor",
-        Mode::DeleteConfirm => "Delete",
-        Mode::ImportSelector => "Import",
-        Mode::Credentials => "Credentials",
-        Mode::CredForm => "Cred Editor",
-        Mode::Settings => "Settings",
-    };
+pub fn draw_header(frame: &mut ratatui::Frame<'_>, app: &App, title: &str, area: Rect) {
     let synced = app.config.connections.values().filter(|p| p.sync()).count();
     let (sync_text, sync_color) = if synced > 0 {
         (format!("synced {synced}"), GREEN)
@@ -58,7 +46,7 @@ pub fn draw_header(frame: &mut ratatui::Frame<'_>, app: &App, area: Rect) {
             Style::default().fg(Color::Black).bg(ACCENT).bold(),
         ),
         Span::raw("  "),
-        Span::styled(mode.to_string(), Style::default().fg(TEXT).bold()),
+        Span::styled(title.to_string(), Style::default().fg(TEXT).bold()),
     ];
 
     let conn_pill = pill(

@@ -58,7 +58,7 @@ pub fn draw_form_list(
                     format!("{marker} {label:<13} "),
                     Style::default().fg(if active { ACCENT } else { MUTED }),
                 );
-                let hint = Span::styled("  Enter toggles", Style::default().fg(BLUE));
+                let hint = Span::styled("  Tab toggles", Style::default().fg(BLUE));
                 let line = if active {
                     Line::from(vec![label_span, badge, hint]).style(Style::default().bg(ACTIVE_BG))
                 } else {

@@ -69,13 +69,27 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
         ])
         .split(area);
 
-    draw_header(frame, app, shell[0]);
     let content = shell[1].inner(Margin {
         horizontal: 1,
         vertical: 1,
     });
 
     use view::View;
+    let (title, hints): (&str, Vec<_>) = match app.session.mode {
+        Mode::Home => (view::HomeListView.title(), view::HomeListView.hints()),
+        Mode::ActionMenu => (view::ActionMenuView.title(), view::ActionMenuView.hints()),
+        Mode::Search => (view::SearchView.title(), view::SearchView.hints()),
+        Mode::QuickSelect => (view::QuickSelectView.title(), view::QuickSelectView.hints()),
+        Mode::DeleteConfirm => (view::DeleteConfirmView.title(), view::DeleteConfirmView.hints()),
+        Mode::Form => (view::FormView.title(), view::FormView.hints()),
+        Mode::ImportSelector => (view::ImportView.title(), view::ImportView.hints()),
+        Mode::Credentials => (view::CredListView.title(), view::CredListView.hints()),
+        Mode::CredForm => (view::CredFormView.title(), view::CredFormView.hints()),
+        Mode::Settings => (view::SettingsView.title(), view::SettingsView.hints()),
+    };
+
+    draw_header(frame, app, title, shell[0]);
+
     match app.session.mode {
         Mode::Home => view::HomeListView.draw(frame, app, content),
         Mode::ActionMenu => view::HomeListView.draw(frame, app, content),
@@ -89,7 +103,7 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
         Mode::Settings => view::SettingsView.draw(frame, app, content),
     }
 
-    draw_help(frame, app, shell[2]);
+    draw_help(frame, &hints, shell[2]);
     if app.session.mode == Mode::DeleteConfirm {
         draw_delete_confirm(frame, app);
     }

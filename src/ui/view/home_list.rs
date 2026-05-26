@@ -19,6 +19,22 @@ use ratatui::{
 pub struct HomeListView;
 
 impl View for HomeListView {
+    fn title(&self) -> &'static str { "Home" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("j/k", "move"),
+            ("Tab", "group"),
+            ("Enter", "connect"),
+            ("Ctrl+Q", "quick"),
+            ("/", "search"),
+            ("a", "add"),
+            ("e", "edit"),
+            ("d", "delete"),
+            (":", "actions"),
+            ("q", "quit"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         let has_search = app.session.mode == Mode::Search;
         let top_height = if has_search { 3 } else { 0 };
@@ -471,6 +487,15 @@ fn handle_home(app: &mut App, key: KeyEvent) -> Result<()> {
 pub struct SearchView;
 
 impl View for SearchView {
+    fn title(&self) -> &'static str { "Search" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("type", "filter"),
+            ("j/k", "move"),
+            ("Esc", "close"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         HomeListView.draw(frame, app, area);
     }
@@ -505,6 +530,15 @@ impl View for SearchView {
 pub struct QuickSelectView;
 
 impl View for QuickSelectView {
+    fn title(&self) -> &'static str { "Quick Select" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("1-9", "connect"),
+            ("Tab", "sort"),
+            ("Esc", "cancel"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         HomeListView.draw(frame, app, area);
     }
@@ -554,6 +588,14 @@ impl View for QuickSelectView {
 pub struct DeleteConfirmView;
 
 impl View for DeleteConfirmView {
+    fn title(&self) -> &'static str { "Delete" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("Y", "yes"),
+            ("N", "no"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         HomeListView.draw(frame, app, area);
     }

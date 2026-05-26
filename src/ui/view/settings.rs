@@ -1,17 +1,27 @@
-use crate::app::{App, Mode, SettingsField, SettingsState, TextEditing, char_len};
+use crate::app::{App, FormAction, Mode, SettingsField, SettingsState, char_len};
 use crate::config::SyncBackend;
 use crate::ui::component::{FormRow, badge_span};
 use crate::ui::{ACCENT, GREEN, ORANGE, PURPLE, RED};
 
-use super::View;
+use super::{View, handle_form_nav};
 
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent;
 use ratatui::{Frame, layout::Rect};
 
 pub struct SettingsView;
 
 impl View for SettingsView {
+    fn title(&self) -> &'static str { "Settings" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("↑/↓", "move"),
+            ("Tab", "toggle"),
+            ("Enter", "save"),
+            ("Esc", "cancel"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         let settings = &app.session.settings;
         let fields = settings.visible_fields();
@@ -86,7 +96,7 @@ impl View for SettingsView {
             }
         }
 
-        let subtitle = "Tab ▽  ↑ △  Enter save/toggle  Esc cancel  Ctrl+U clear";
+        let subtitle = "↓ ▽  ↑ △  Tab toggle  Enter save  Esc cancel  Ctrl+U clear";
         crate::ui::component::draw_form_list(frame, area, "Settings", subtitle, rows);
     }
 
@@ -98,73 +108,15 @@ impl View for SettingsView {
 // ── Key handling ───────────────────────────────────────────────
 
 fn handle_settings(app: &mut App, key: KeyEvent) -> Result<()> {
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-    let settings = &mut app.session.settings;
-
-    match key.code {
-        KeyCode::Esc => {
-            app.session.mode = Mode::Home;
+    if let Some(action) = handle_form_nav(&mut app.session.settings, key) {
+        match action {
+            FormAction::Toggle => settings_toggle(&mut app.session.settings),
+            FormAction::Save => match app.save_settings() {
+                Ok(()) => app.toast("settings saved", true),
+                Err(err) => app.toast(err.to_string(), false),
+            },
+            FormAction::Cancel => app.session.mode = Mode::Home,
         }
-
-        KeyCode::Tab | KeyCode::Down => {
-            settings.next_field();
-        }
-        KeyCode::BackTab | KeyCode::Up => {
-            settings.prev_field();
-        }
-
-        KeyCode::Enter => {
-            if settings.active.is_toggle() {
-                settings_toggle(settings);
-            } else {
-                match app.save_settings() {
-                    Ok(()) => app.toast("settings saved", true),
-                    Err(err) => app.toast(err.to_string(), false),
-                }
-            }
-        }
-
-        KeyCode::Backspace if settings.active.is_text() => {
-            settings.delete_char();
-        }
-        KeyCode::Delete if settings.active.is_text() => {
-            settings.delete_next_char();
-        }
-        KeyCode::Left if settings.active.is_text() => {
-            settings.move_cursor_left();
-        }
-        KeyCode::Right if settings.active.is_text() => {
-            settings.move_cursor_right();
-        }
-        KeyCode::Home if settings.active.is_text() => {
-            settings.cursor_home();
-        }
-        KeyCode::End if settings.active.is_text() => {
-            settings.cursor_end();
-        }
-        KeyCode::Char('a') if ctrl && settings.active.is_text() => {
-            settings.cursor_home();
-        }
-        KeyCode::Char('e') if ctrl && settings.active.is_text() => {
-            settings.cursor_end();
-        }
-        KeyCode::Char('u') if ctrl && settings.active.is_text() => {
-            settings.clear_field();
-        }
-
-        KeyCode::Char(' ') => {
-            if settings.active.is_toggle() {
-                settings_toggle(settings);
-            } else if settings.active.is_text() {
-                settings.insert_char(' ');
-            }
-        }
-
-        KeyCode::Char(c) if !ctrl && settings.active.is_text() => {
-            settings.insert_char(c);
-        }
-
-        _ => {}
     }
     Ok(())
 }

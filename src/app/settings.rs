@@ -1,4 +1,4 @@
-use super::TextEditing;
+use super::{FormNav, TextEditing};
 use crate::config::SyncBackend;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,6 +126,13 @@ impl SettingsState {
             self.cursor = self.active_text().chars().count();
         }
     }
+}
+
+impl FormNav for SettingsState {
+    fn nav_next(&mut self) { self.next_field(); }
+    fn nav_prev(&mut self) { self.prev_field(); }
+    fn active_is_toggle(&self) -> bool { self.active.is_toggle() }
+    fn active_is_text(&self) -> bool { self.active.is_text() }
 }
 
 impl Default for SettingsState {

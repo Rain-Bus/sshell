@@ -76,6 +76,22 @@ pub trait TextEditing {
     }
 }
 
+// ── Form navigation trait ────────────────────────────────────
+
+pub trait FormNav: TextEditing {
+    fn nav_next(&mut self);
+    fn nav_prev(&mut self);
+    fn active_is_toggle(&self) -> bool;
+    fn active_is_text(&self) -> bool;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormAction {
+    Toggle,
+    Save,
+    Cancel,
+}
+
 pub fn char_len(value: &str) -> usize {
     value.chars().count()
 }

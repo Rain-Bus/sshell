@@ -1,4 +1,4 @@
-use super::{TextEditing, char_len};
+use super::{FormNav, TextEditing, char_len};
 use crate::app::AuthKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,6 +80,13 @@ impl CredFormState {
             _ => "",
         }
     }
+}
+
+impl FormNav for CredFormState {
+    fn nav_next(&mut self) { self.next_field(); }
+    fn nav_prev(&mut self) { self.prev_field(); }
+    fn active_is_toggle(&self) -> bool { self.active.is_toggle() }
+    fn active_is_text(&self) -> bool { self.active.is_text() }
 }
 
 impl TextEditing for CredFormState {

@@ -17,6 +17,17 @@ use ratatui::{
 pub struct CredListView;
 
 impl View for CredListView {
+    fn title(&self) -> &'static str { "Credentials" }
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("j/k", "move"),
+            ("Enter", "edit"),
+            ("a", "add"),
+            ("d", "delete"),
+            ("Esc", "back"),
+        ]
+    }
+
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
         draw_credentials(frame, app, area);
     }
