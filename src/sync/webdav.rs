@@ -1,5 +1,5 @@
 use crate::config::SshellConfig;
-use super::gist::{PullStrategy, build_sync_payload, merge_remote};
+use super::{PullStrategy, build_sync_payload, merge_remote};
 use anyhow::{Context, Result, bail};
 use reqwest::blocking::Client;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};

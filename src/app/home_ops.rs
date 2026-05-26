@@ -77,9 +77,9 @@ impl App {
 
     pub fn pull_sync_with_toast(&mut self) {
         let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::sync::gist::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
-            SyncBackend::Webdav => crate::sync::webdav::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
-            SyncBackend::S3 => crate::sync::s3::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
+            SyncBackend::Gist => crate::sync::gist::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
+            SyncBackend::Webdav => crate::sync::webdav::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
+            SyncBackend::S3 => crate::sync::s3::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
         };
         match result {
             Ok(count) => self.toast(format!("pulled {count} items"), true),

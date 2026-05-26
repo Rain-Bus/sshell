@@ -1,5 +1,5 @@
 use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
-use crate::sync::{gist, s3, webdav};
+use crate::sync::{self, gist, s3, webdav};
 use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -75,8 +75,8 @@ pub fn run() -> Result<()> {
 fn run_sync(command: SyncCommand) -> Result<()> {
     let mut cfg = SshellConfig::load()?;
     let strat = |s: PullStrategy| match s {
-        PullStrategy::Merge => gist::PullStrategy::Merge,
-        PullStrategy::Overwrite => gist::PullStrategy::Overwrite,
+        PullStrategy::Merge => sync::PullStrategy::Merge,
+        PullStrategy::Overwrite => sync::PullStrategy::Overwrite,
     };
     match command {
         SyncCommand::Push => match cfg.settings.backend {
