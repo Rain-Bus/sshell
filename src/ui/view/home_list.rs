@@ -1,4 +1,5 @@
 use crate::app::{App, Mode};
+use crate::app::display_name;
 use crate::config::{ConnectionSource, ConnectionType, CredentialEntry};
 use crate::ui::component::{badge_span, draw_input, panel, tag_badge};
 use crate::ui::{ACCENT, BLUE, GREEN, MUTED, PANEL_ALT, PURPLE, RED, SELECTED_BG, TEXT};
@@ -83,7 +84,7 @@ pub fn draw_connection_list(frame: &mut Frame<'_>, app: &App, area: Rect) {
     };
     if entries.is_empty() {
         let message = if app.session.home.search.is_empty() {
-            "\n  No connections yet\n\n  Press a to create one or i to import from ~/.ssh/config"
+            "\n  No connections yet\n\n  Press a to add or : for actions"
         } else {
             "\n  No matching connections\n\n  Press Esc to clear search"
         };
@@ -259,7 +260,7 @@ fn connection_row(
     };
 
     Row::new([
-        Cell::from(format!("{marker} {name}")).style(row_style),
+        Cell::from(format!("{marker} {}", display_name(name))).style(row_style),
         Cell::from(type_badge).style(
             Style::default()
                 .fg(crate::ui::BG)
@@ -301,7 +302,7 @@ pub fn draw_detail_panel(frame: &mut Frame<'_>, app: &App, area: Rect) {
         Span::raw("  "),
         badge_span(badge, badge_color),
         Span::raw("  "),
-        Span::styled((*name).clone(), Style::default().fg(TEXT).bold()),
+        Span::styled(display_name(name).to_string(), Style::default().fg(TEXT).bold()),
     ]));
     lines.push(Line::from(vec![
         Span::raw("  "),
@@ -452,12 +453,7 @@ fn handle_home(app: &mut App, key: KeyEvent) -> Result<()> {
         KeyCode::Char('a') => app.new_form(),
         KeyCode::Char('e') => app.edit_form(),
         KeyCode::Char('d') => app.enter_delete_confirm_for_selected(),
-        KeyCode::Char('i') => app.enter_import_selector()?,
-        KeyCode::Char('r') => app.refresh_local_shells()?,
-        KeyCode::Char('p') => app.push_sync_with_toast(),
-        KeyCode::Char('P') => app.pull_sync_with_toast(),
-        KeyCode::Char('c') => app.enter_credentials(),
-        KeyCode::Char('s') => app.enter_settings(),
+        KeyCode::Char(':') => app.enter_action_menu(),
         _ => {}
     }
     Ok(())

@@ -78,12 +78,12 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
     use view::View;
     match app.session.mode {
         Mode::Home => view::HomeListView.draw(frame, app, content),
+        Mode::ActionMenu => view::HomeListView.draw(frame, app, content),
         Mode::Search => view::SearchView.draw(frame, app, content),
         Mode::QuickSelect => view::QuickSelectView.draw(frame, app, content),
         Mode::DeleteConfirm => view::DeleteConfirmView.draw(frame, app, content),
         Mode::Form => view::FormView.draw(frame, app, content),
         Mode::ImportSelector => view::ImportView.draw(frame, app, content),
-        Mode::ShellImport => view::ShellImportView.draw(frame, app, content),
         Mode::Credentials => view::CredListView.draw(frame, app, content),
         Mode::CredForm => view::CredFormView.draw(frame, app, content),
         Mode::Settings => view::SettingsView.draw(frame, app, content),
@@ -92,6 +92,9 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
     draw_help(frame, app, shell[2]);
     if app.session.mode == Mode::DeleteConfirm {
         draw_delete_confirm(frame, app);
+    }
+    if app.session.mode == Mode::ActionMenu {
+        view::ActionMenuView.draw(frame, app, content);
     }
     if let Some(toast) = &app.session.toast {
         draw_toast(frame, toast.message.as_str(), toast.success);

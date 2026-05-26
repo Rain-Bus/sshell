@@ -22,10 +22,7 @@ fn home_hints() -> Vec<Hint> {
         Hint { key: "a", desc: "add" },
         Hint { key: "e", desc: "edit" },
         Hint { key: "d", desc: "delete" },
-        Hint { key: "r", desc: "scan" },
-        Hint { key: "p/P", desc: "push/pull" },
-        Hint { key: "c", desc: "creds" },
-        Hint { key: "s", desc: "settings" },
+        Hint { key: ":", desc: "actions" },
         Hint { key: "q", desc: "quit" },
     ]
 }
@@ -91,16 +88,6 @@ fn import_hints() -> Vec<Hint> {
     ]
 }
 
-fn shell_import_hints() -> Vec<Hint> {
-    vec![
-        Hint { key: "j/k", desc: "move" },
-        Hint { key: "Space", desc: "toggle" },
-        Hint { key: "a/A", desc: "all/none" },
-        Hint { key: "Enter", desc: "enable" },
-        Hint { key: "Esc", desc: "skip" },
-    ]
-}
-
 fn settings_hints() -> Vec<Hint> {
     vec![
         Hint { key: "type", desc: "edit" },
@@ -109,9 +96,18 @@ fn settings_hints() -> Vec<Hint> {
     ]
 }
 
+fn action_menu_hints() -> Vec<Hint> {
+    vec![
+        Hint { key: "j/k", desc: "move" },
+        Hint { key: "Enter", desc: "select" },
+        Hint { key: "Esc", desc: "cancel" },
+    ]
+}
+
 pub fn draw_help(frame: &mut ratatui::Frame<'_>, app: &App, area: Rect) {
     let hints = match app.session.mode {
         Mode::Home => home_hints(),
+        Mode::ActionMenu => action_menu_hints(),
         Mode::Search => search_hints(),
         Mode::QuickSelect => quick_select_hints(),
         Mode::Form => form_hints(),
@@ -119,7 +115,6 @@ pub fn draw_help(frame: &mut ratatui::Frame<'_>, app: &App, area: Rect) {
         Mode::Credentials => credentials_hints(),
         Mode::CredForm => cred_form_hints(),
         Mode::ImportSelector => import_hints(),
-        Mode::ShellImport => shell_import_hints(),
         Mode::Settings => settings_hints(),
     };
 

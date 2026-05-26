@@ -3,7 +3,6 @@ mod form_ops;
 mod home_ops;
 mod profile_ext;
 mod settings_ops;
-mod shell_ops;
 mod types;
 
 pub mod cred;
@@ -12,7 +11,7 @@ pub mod settings;
 
 pub use cred::{CredFormField, CredFormState};
 pub use form::{FormField, FormState};
-pub use profile_ext::split_args;
+pub use profile_ext::{display_name, split_args};
 pub use settings::{SettingsField, SettingsState};
 pub use types::*;
 
@@ -28,17 +27,10 @@ pub struct App {
 impl App {
     pub fn load() -> Result<Self> {
         let config = SshellConfig::load()?;
-        let should_pick_shells = !config
-            .connections
-            .values()
-            .any(|profile| matches!(profile.kind, ConnectionType::Shell { .. }));
-        let mut app = Self {
+        let app = Self {
             config,
             session: Session::new(),
         };
-        if should_pick_shells {
-            app.enter_shell_import();
-        }
         Ok(app)
     }
 
@@ -97,14 +89,14 @@ impl App {
 
     pub fn move_selection(&mut self, delta: isize) {
         let len = match self.session.mode {
-            Mode::ImportSelector => self.session.import.candidates.len(),
-            Mode::ShellImport => self.session.shell_import.candidates.len(),
+            Mode::ImportSelector => {
+                self.session.import.shell_candidates.len() + self.session.import.candidates.len()
+            }
             Mode::Credentials => self.config.credentials.entries.len(),
             _ => self.entries().len(),
         };
         let selected = match self.session.mode {
             Mode::ImportSelector => &mut self.session.import.cursor,
-            Mode::ShellImport => &mut self.session.shell_import.cursor,
             Mode::Credentials => &mut self.session.credentials.selected,
             _ => &mut self.session.home.selected,
         };

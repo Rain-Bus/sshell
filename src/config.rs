@@ -149,6 +149,7 @@ impl SshellConfig {
         let mut cfg: Self =
             toml::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))?;
         cfg.migrate_path_to_embedded();
+        cfg.migrate_shell_prefix();
         Ok(cfg)
     }
 
@@ -209,7 +210,7 @@ impl SshellConfig {
             }
             let conflict = self
                 .connections
-                .contains_key(base_name)
+                .contains_key(&format!("${base_name}"))
                 .then(|| ShellScanConflict {
                     name: base_name.to_string(),
                     path: path.clone(),
@@ -250,7 +251,8 @@ impl SshellConfig {
     }
 
     pub fn add_local_shell(&mut self, candidate: &ShellCandidate) -> Result<()> {
-        if candidate.conflict.is_some() || self.connections.contains_key(&candidate.name) {
+        let key = format!("${}", candidate.name);
+        if candidate.conflict.is_some() || self.connections.contains_key(&key) {
             bail!("shell name conflict: {}", candidate.name);
         }
         let command = candidate.path.to_string_lossy().to_string();
@@ -260,7 +262,7 @@ impl SshellConfig {
             return Ok(());
         }
         self.connections.insert(
-            candidate.name.clone(),
+            key,
             ConnectionProfile {
                 tags: Vec::new(),
                 local_tags: vec!["local".to_string(), "scanned".to_string()],
@@ -294,6 +296,20 @@ impl SshellConfig {
                 }
             }
             *path = None;
+        }
+    }
+
+    fn migrate_shell_prefix(&mut self) {
+        let keys: Vec<String> = self
+            .connections
+            .iter()
+            .filter(|(key, profile)| {
+                matches!(&profile.kind, ConnectionType::Shell { .. }) && !key.starts_with('$')
+            })
+            .map(|(key, _)| key.clone())
+            .collect();
+        for key in keys {
+            self.connections.shift_remove(&key);
         }
     }
 }

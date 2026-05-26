@@ -93,9 +93,9 @@ fn char_to_byte_index(value: &str, char_pos: usize) -> usize {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Home,
+    ActionMenu,
     Search,
     QuickSelect,
-    ShellImport,
     Form,
     DeleteConfirm,
     ImportSelector,
@@ -147,16 +147,23 @@ pub struct Toast {
     pub born: std::time::Instant,
 }
 
+// ── Action Menu ────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Default)]
+pub struct ActionMenuSession {
+    pub cursor: usize,
+}
+
 // ── Session ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
 pub struct Session {
     pub mode: Mode,
     pub home: HomeSession,
+    pub action_menu: ActionMenuSession,
     pub form: FormState,
     pub credentials: CredentialSession,
     pub import: ImportSession,
-    pub shell_import: ShellImportSession,
     pub toast: Option<Toast>,
     pub should_quit: bool,
     pub settings: SettingsState,
@@ -180,13 +187,8 @@ pub struct ImportSession {
     pub cursor: usize,
     pub candidates: Vec<ImportCandidate>,
     pub selected: Vec<bool>,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct ShellImportSession {
-    pub cursor: usize,
-    pub candidates: Vec<crate::config::ShellCandidate>,
-    pub selected: Vec<bool>,
+    pub shell_candidates: Vec<crate::config::ShellCandidate>,
+    pub shell_selected: Vec<bool>,
 }
 
 impl Session {
@@ -194,10 +196,10 @@ impl Session {
         Self {
             mode: Mode::Home,
             home: HomeSession::default(),
+            action_menu: ActionMenuSession::default(),
             form: FormState::blank(),
             credentials: CredentialSession::default(),
             import: ImportSession::default(),
-            shell_import: ShellImportSession::default(),
             toast: None,
             should_quit: false,
             settings: SettingsState::default(),

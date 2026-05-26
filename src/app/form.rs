@@ -104,7 +104,7 @@ impl FormState {
     pub fn from_profile(name: &str, profile: &ConnectionProfile, cfg: &SshellConfig) -> Self {
         let mut form = Self::blank();
         form.edit_name = Some(name.to_string());
-        form.name = name.to_string();
+        form.name = name.strip_prefix('$').unwrap_or(name).to_string();
         form.tags = profile.tags.join(", ");
         match &profile.kind {
             ConnectionType::Ssh {

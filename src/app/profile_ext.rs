@@ -1,12 +1,16 @@
 use crate::config::{ConnectionProfile, ConnectionType};
 use std::fs;
 
+pub fn display_name(key: &str) -> &str {
+    key.strip_prefix('$').unwrap_or(key)
+}
+
 pub fn matches_search(name: &str, profile: &ConnectionProfile, query: &str) -> bool {
     let query = query.trim().to_lowercase();
     if query.is_empty() {
         return true;
     }
-    if name.to_lowercase().contains(&query) {
+    if display_name(name).to_lowercase().contains(&query) {
         return true;
     }
     if profile

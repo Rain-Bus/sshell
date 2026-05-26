@@ -1,3 +1,4 @@
+mod action_menu;
 mod cred_form;
 mod cred_list;
 mod delete_confirm_view;
@@ -23,12 +24,13 @@ pub trait View {
     fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()>;
 }
 
+pub use action_menu::ActionMenuView;
 pub use cred_form::CredFormView;
 pub use cred_list::CredListView;
 pub use delete_confirm_view::DeleteConfirmView;
 pub use form::FormView;
 pub use home_list::HomeListView;
-pub use import::{ImportView, ShellImportView};
+pub use import::ImportView;
 pub use quick_select::QuickSelectView;
 pub use search::SearchView;
 pub use settings::SettingsView;

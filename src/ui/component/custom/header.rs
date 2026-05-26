@@ -11,12 +11,12 @@ use ratatui::{
 pub fn draw_header(frame: &mut ratatui::Frame<'_>, app: &App, area: Rect) {
     let mode = match app.session.mode {
         Mode::Home => "Home",
+        Mode::ActionMenu => "Actions",
         Mode::Search => "Search",
         Mode::QuickSelect => "Quick Select",
         Mode::Form => "Editor",
         Mode::DeleteConfirm => "Delete",
         Mode::ImportSelector => "Import",
-        Mode::ShellImport => "Shells",
         Mode::Credentials => "Credentials",
         Mode::CredForm => "Cred Editor",
         Mode::Settings => "Settings",

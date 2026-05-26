@@ -2,7 +2,7 @@ use crate::app::App;
 use crate::ui::component::{panel, panel_with_subtitle};
 use crate::ui::{BLUE, GREEN, MUTED, SELECTED_BG, TEXT};
 
-use super::{View, scroll_rows};
+use super::View;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -14,7 +14,6 @@ use ratatui::{
 };
 
 pub struct ImportView;
-pub struct ShellImportView;
 
 impl View for ImportView {
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
@@ -26,245 +25,228 @@ impl View for ImportView {
     }
 }
 
-impl View for ShellImportView {
-    fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
-        draw_shell_import(frame, app, area);
-    }
-
-    fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()> {
-        handle_shell_import(app, key)
-    }
-}
-
 // ── Rendering ──────────────────────────────────────────────────
 
 fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
-    if app.session.import.candidates.is_empty() {
-        Paragraph::new("\n  No importable hosts found in ~/.ssh/config")
+    let shell_len = app.session.import.shell_candidates.len();
+    let ssh_len = app.session.import.candidates.len();
+    let total = shell_len + ssh_len;
+
+    if total == 0 {
+        Paragraph::new("\n  No importable hosts or shells found")
             .fg(MUTED)
             .alignment(Alignment::Center)
-            .block(panel("SSH Config Import"))
+            .block(panel("Import"))
             .render(area, frame.buffer_mut());
         return;
     }
-    let rows: Vec<Row<'_>> = app
-        .session
-        .import
-        .candidates
-        .iter()
-        .enumerate()
-        .map(|(idx, item)| {
-            let selected_row = idx == app.session.import.cursor;
-            let checked = app
-                .session
-                .import
-                .selected
-                .get(idx)
-                .copied()
-                .unwrap_or(false);
-            let style = if selected_row {
-                Style::default()
-                    .bg(SELECTED_BG)
-                    .fg(TEXT)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(TEXT)
-            };
-            let check_style = if checked {
-                Style::default().fg(GREEN).add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(MUTED)
-            };
-            Row::new([
-                Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
-                Cell::from(item.name.clone()).style(style),
-                Cell::from(format!("{}@{}:{}", item.user, item.host, item.port)).style(style),
-                Cell::from(
-                    item.identity_file
-                        .as_ref()
-                        .map(|p| p.display().to_string())
-                        .unwrap_or_else(|| "-".to_string()),
-                )
-                .style(style),
-            ])
-        })
-        .collect();
 
-    let rows = scroll_rows(rows, app.session.import.cursor, area.height);
+    let mut rows: Vec<Row<'_>> = Vec::new();
+    let mut entry_row: Vec<usize> = Vec::new(); // item_idx -> visual row
+
+    if shell_len > 0 {
+        rows.push(section_row("Shell", shell_len));
+    }
+    for (idx, item) in app.session.import.shell_candidates.iter().enumerate() {
+        entry_row.push(rows.len());
+        let selected_row = idx == app.session.import.cursor;
+        let checked = app.session.import.shell_selected.get(idx).copied().unwrap_or(false);
+        let has_conflict = item.conflict.is_some();
+        let style = if selected_row {
+            Style::default().bg(SELECTED_BG).fg(TEXT).add_modifier(Modifier::BOLD)
+        } else if has_conflict {
+            Style::default().fg(MUTED)
+        } else {
+            Style::default().fg(TEXT)
+        };
+        let check_style = if checked {
+            Style::default().fg(GREEN).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(MUTED)
+        };
+        let status = item
+            .conflict
+            .as_ref()
+            .map(|c| format!("conflict: {}", c.name))
+            .unwrap_or_else(|| "-".to_string());
+        rows.push(Row::new([
+            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
+            Cell::from(item.name.clone()).style(style),
+            Cell::from(item.path.display().to_string()).style(style),
+            Cell::from(status).style(style),
+        ]));
+    }
+
+    if shell_len > 0 && ssh_len > 0 {
+        rows.push(Row::new(["", "", "", ""]).height(1));
+    }
+
+    if ssh_len > 0 {
+        rows.push(section_row("SSH", ssh_len));
+    }
+    for (idx, item) in app.session.import.candidates.iter().enumerate() {
+        entry_row.push(rows.len());
+        let selected_row = (shell_len + idx) == app.session.import.cursor;
+        let checked = app.session.import.selected.get(idx).copied().unwrap_or(false);
+        let style = if selected_row {
+            Style::default().bg(SELECTED_BG).fg(TEXT).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(TEXT)
+        };
+        let check_style = if checked {
+            Style::default().fg(GREEN).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(MUTED)
+        };
+        rows.push(Row::new([
+            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
+            Cell::from(item.name.clone()).style(style),
+            Cell::from(format!("{}@{}:{}", item.user, item.host, item.port)).style(style),
+            Cell::from(
+                item.identity_file
+                    .as_ref()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_else(|| "-".to_string()),
+            )
+            .style(style),
+        ]));
+    }
+
+    // Scroll to keep selected entry visible
+    let visible = area.height.saturating_sub(3) as usize;
+    if visible > 0 && !entry_row.is_empty() {
+        let sel_row = entry_row[app.session.import.cursor.min(entry_row.len() - 1)];
+        let total_rows = rows.len();
+        if total_rows > visible {
+            let scroll = if sel_row < visible / 2 {
+                0
+            } else if sel_row + visible / 2 >= total_rows {
+                total_rows.saturating_sub(visible)
+            } else {
+                sel_row - visible / 2
+            };
+            rows = rows.into_iter().skip(scroll).take(visible).collect();
+        }
+    }
 
     let table = Table::new(
         rows,
         [
-            Constraint::Length(5),
-            Constraint::Length(24),
-            Constraint::Percentage(35),
-            Constraint::Percentage(45),
+            Constraint::Length(14),
+            Constraint::Length(22),
+            Constraint::Percentage(40),
+            Constraint::Percentage(30),
         ],
     )
     .header(
-        Row::new(["  Use", "Name", "Target", "Identity File"])
-            .style(Style::default().fg(BLUE).bold()),
+        Row::new(["  Use", "Name", "Target", "Identity / Status"])
+            .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
     )
     .block(panel_with_subtitle(
-        "SSH Config Import",
+        "Import",
         "Space toggle  a all  A none  Enter import  Esc cancel",
     ))
     .column_spacing(2);
     frame.render_widget(table, area);
 }
 
-fn draw_shell_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
-    if app.session.shell_import.candidates.is_empty() {
-        Paragraph::new("\n  No new local shells found\n\n  Press Esc to return home")
-            .fg(MUTED)
-            .alignment(Alignment::Center)
-            .block(panel("Detected Shells"))
-            .render(area, frame.buffer_mut());
-        return;
-    }
-
-    let rows: Vec<Row<'_>> = app
-        .session
-        .shell_import
-        .candidates
-        .iter()
-        .enumerate()
-        .map(|(idx, item)| {
-            let selected_row = idx == app.session.shell_import.cursor;
-            let checked = app
-                .session
-                .shell_import
-                .selected
-                .get(idx)
-                .copied()
-                .unwrap_or(false);
-            let has_conflict = item.conflict.is_some();
-            let style = if selected_row {
-                Style::default()
-                    .bg(SELECTED_BG)
-                    .fg(TEXT)
-                    .add_modifier(Modifier::BOLD)
-            } else if has_conflict {
-                Style::default().fg(MUTED)
-            } else {
-                Style::default().fg(TEXT)
-            };
-            let check_style = if checked {
-                Style::default().fg(GREEN).add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(MUTED)
-            };
-            let status = item
-                .conflict
-                .as_ref()
-                .map(|conflict| format!("conflict: {}", conflict.name))
-                .unwrap_or_else(|| "ready".to_string());
-            Row::new([
-                Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
-                Cell::from(item.name.clone()).style(style),
-                Cell::from(item.path.display().to_string()).style(style),
-                Cell::from(status).style(style),
-            ])
-        })
-        .collect();
-
-    let rows = scroll_rows(rows, app.session.shell_import.cursor, area.height);
-
-    let table = Table::new(
-        rows,
-        [
-            Constraint::Length(5),
-            Constraint::Length(20),
-            Constraint::Percentage(50),
-            Constraint::Percentage(30),
-        ],
-    )
-    .header(Row::new(["  Use", "Name", "Path", "Status"]).style(Style::default().fg(BLUE).bold()))
-    .block(panel_with_subtitle(
-        "Detected Shells",
-        "Space toggle  a all  A none  Enter enable  Esc skip",
-    ))
-    .column_spacing(2);
-    frame.render_widget(table, area);
+fn section_row(label: &str, count: usize) -> Row<'static> {
+    Row::new([
+        Cell::from(format!("  {label} ({count})"))
+            .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
+        Cell::from(""),
+        Cell::from(""),
+        Cell::from(""),
+    ])
+    .height(1)
 }
 
 // ── Key handling ───────────────────────────────────────────────
 
 fn handle_import(app: &mut App, key: KeyEvent) -> Result<()> {
+    let shell_len = app.session.import.shell_candidates.len();
+    let total = shell_len + app.session.import.candidates.len();
+
     match key.code {
         KeyCode::Esc => app.session.mode = crate::app::Mode::Home,
-        KeyCode::Down | KeyCode::Char('j') => app.move_selection(1),
-        KeyCode::Up | KeyCode::Char('k') => app.move_selection(-1),
+        KeyCode::Down | KeyCode::Char('j') if total > 0 => {
+            app.session.import.cursor = (app.session.import.cursor + 1) % total;
+        }
+        KeyCode::Up | KeyCode::Char('k') if total > 0 => {
+            app.session.import.cursor = (app.session.import.cursor + total - 1) % total;
+        }
         KeyCode::Char(' ') => {
-            if let Some(v) = app
-                .session
-                .import
-                .selected
-                .get_mut(app.session.import.cursor)
-            {
-                *v = !*v;
+            if app.session.import.cursor < shell_len {
+                let can_toggle = app
+                    .session
+                    .import
+                    .shell_candidates
+                    .get(app.session.import.cursor)
+                    .is_some_and(|c| c.conflict.is_none());
+                if can_toggle
+                    && let Some(v) = app.session.import.shell_selected.get_mut(app.session.import.cursor)
+                {
+                    *v = !*v;
+                }
+            } else {
+                let ssh_idx = app.session.import.cursor - shell_len;
+                if let Some(v) = app.session.import.selected.get_mut(ssh_idx) {
+                    *v = !*v;
+                }
             }
         }
-        KeyCode::Char('a') => app.session.import.selected.fill(true),
-        KeyCode::Char('A') => app.session.import.selected.fill(false),
+        KeyCode::Char('a') => {
+            app.session
+                .import
+                .shell_selected
+                .iter_mut()
+                .zip(&app.session.import.shell_candidates)
+                .for_each(|(sel, c)| *sel = c.conflict.is_none());
+            app.session.import.selected.fill(true);
+        }
+        KeyCode::Char('A') => {
+            app.session.import.shell_selected.fill(false);
+            app.session.import.selected.fill(false);
+        }
         KeyCode::Enter => {
-            let picked: Vec<_> = app
+            let mut imported = 0;
+            let picked_shells: Vec<_> = app
+                .session
+                .import
+                .shell_candidates
+                .iter()
+                .zip(&app.session.import.shell_selected)
+                .filter_map(|(item, &selected)| selected.then_some(item.clone()))
+                .collect();
+            for candidate in &picked_shells {
+                if candidate.conflict.is_none() {
+                    app.config.add_local_shell(candidate)?;
+                    imported += 1;
+                }
+            }
+            let picked_ssh: Vec<_> = app
                 .session
                 .import
                 .candidates
                 .iter()
                 .zip(&app.session.import.selected)
-                .filter_map(|(item, selected)| selected.then_some(item.clone()))
+                .filter_map(|(item, &selected)| selected.then_some(item.clone()))
                 .collect();
-            match crate::import::import_candidates(&mut app.config, &picked) {
-                Ok(count) => app.toast(format!("imported {count} connections"), true),
-                Err(err) => app.toast(err.to_string(), false),
+            if !picked_ssh.is_empty() {
+                match crate::import::import_candidates(&mut app.config, &picked_ssh) {
+                    Ok(count) => imported += count,
+                    Err(err) => {
+                        app.toast(err.to_string(), false);
+                        app.session.mode = crate::app::Mode::Home;
+                        return Ok(());
+                    }
+                }
             }
-            app.session.mode = crate::app::Mode::Home;
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
-fn handle_shell_import(app: &mut App, key: KeyEvent) -> Result<()> {
-    match key.code {
-        KeyCode::Esc => app.session.mode = crate::app::Mode::Home,
-        KeyCode::Down | KeyCode::Char('j') => app.move_selection(1),
-        KeyCode::Up | KeyCode::Char('k') => app.move_selection(-1),
-        KeyCode::Char(' ') => {
-            let can_select = app
-                .session
-                .shell_import
-                .candidates
-                .get(app.session.shell_import.cursor)
-                .is_some_and(|candidate| candidate.conflict.is_none());
-            if can_select
-                && let Some(v) = app
-                    .session
-                    .shell_import
-                    .selected
-                    .get_mut(app.session.shell_import.cursor)
-            {
-                *v = !*v;
-            }
-        }
-        KeyCode::Char('a') => {
-            for (selected, candidate) in app
-                .session
-                .shell_import
-                .selected
-                .iter_mut()
-                .zip(&app.session.shell_import.candidates)
-            {
-                *selected = candidate.conflict.is_none();
-            }
-        }
-        KeyCode::Char('A') => app.session.shell_import.selected.fill(false),
-        KeyCode::Enter => {
-            match app.import_selected_shells() {
-                Ok(count) => app.toast(format!("enabled {count} shells"), true),
-                Err(err) => app.toast(err.to_string(), false),
+            if imported > 0 {
+                app.config.save()?;
+                app.toast(format!("imported {imported} items"), true);
+            } else {
+                app.toast("nothing selected", false);
             }
             app.session.mode = crate::app::Mode::Home;
         }

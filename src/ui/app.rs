@@ -12,8 +12,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use super::view::{
-    CredFormView, CredListView, DeleteConfirmView, FormView, HomeListView, ImportView,
-    QuickSelectView, SearchView, SettingsView, ShellImportView, View,
+    ActionMenuView, CredFormView, CredListView, DeleteConfirmView, FormView, HomeListView,
+    ImportView, QuickSelectView, SearchView, SettingsView, View,
 };
 
 static TERMINAL_RESTORED: AtomicBool = AtomicBool::new(false);
@@ -71,12 +71,12 @@ fn handle_key(app: &mut App, key: KeyEvent) -> Result<()> {
     }
     match app.session.mode {
         Mode::Home => HomeListView.handle_key(app, key),
+        Mode::ActionMenu => ActionMenuView.handle_key(app, key),
         Mode::Search => SearchView.handle_key(app, key),
         Mode::QuickSelect => QuickSelectView.handle_key(app, key),
         Mode::DeleteConfirm => DeleteConfirmView.handle_key(app, key),
         Mode::Form => FormView.handle_key(app, key),
         Mode::ImportSelector => ImportView.handle_key(app, key),
-        Mode::ShellImport => ShellImportView.handle_key(app, key),
         Mode::Credentials => CredListView.handle_key(app, key),
         Mode::CredForm => CredFormView.handle_key(app, key),
         Mode::Settings => SettingsView.handle_key(app, key),

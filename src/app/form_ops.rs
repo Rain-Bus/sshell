@@ -69,6 +69,11 @@ impl App {
         if name.is_empty() {
             bail!("name is required");
         }
+        let name = if self.session.form.is_shell && !name.starts_with('$') {
+            format!("${name}")
+        } else {
+            name
+        };
         if self.session.form.edit_name.as_deref() != Some(&name)
             && self.config.connections.contains_key(&name)
         {

@@ -8,6 +8,21 @@ impl App {
         self.session.should_quit = true;
     }
 
+    pub fn enter_action_menu(&mut self) {
+        self.session.action_menu.cursor = 0;
+        self.session.mode = Mode::ActionMenu;
+    }
+
+    pub fn enter_combined_import(&mut self) -> Result<()> {
+        self.session.import.candidates = crate::import::load_candidates(&self.config)?;
+        self.session.import.selected = vec![false; self.session.import.candidates.len()];
+        self.session.import.shell_candidates = self.config.local_shell_candidates();
+        self.session.import.shell_selected = vec![false; self.session.import.shell_candidates.len()];
+        self.session.import.cursor = 0;
+        self.session.mode = Mode::ImportSelector;
+        Ok(())
+    }
+
     pub fn enter_quick_select(&mut self) {
         if self.entries().is_empty() {
             self.toast("no connections available", false);
@@ -40,7 +55,9 @@ impl App {
 
     pub fn enter_import_selector(&mut self) -> Result<()> {
         self.session.import.candidates = crate::import::load_candidates(&self.config)?;
-        self.session.import.selected = vec![true; self.session.import.candidates.len()];
+        self.session.import.selected = vec![false; self.session.import.candidates.len()];
+        self.session.import.shell_candidates = self.config.local_shell_candidates();
+        self.session.import.shell_selected = vec![false; self.session.import.shell_candidates.len()];
         self.session.import.cursor = 0;
         self.session.mode = Mode::ImportSelector;
         Ok(())
