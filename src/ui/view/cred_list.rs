@@ -74,7 +74,11 @@ fn draw_credentials(frame: &mut Frame<'_>, app: &App, area: Rect) {
             Row::new([
                 Cell::from(format!("{} {}", if selected { ">" } else { " " }, (*name)))
                     .style(style),
-                Cell::from(format!("● {kind_text}")).style(Style::default().fg(dot_color)),
+                Cell::from(format!("● {kind_text}")).style(if selected {
+                    Style::default().fg(dot_color).bg(SELECTED_BG)
+                } else {
+                    Style::default().fg(dot_color)
+                }),
                 Cell::from(ref_text).style(style),
             ])
         })
@@ -95,7 +99,7 @@ fn draw_credentials(frame: &mut Frame<'_>, app: &App, area: Rect) {
             .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
     )
     .block(panel("Credentials"))
-    .column_spacing(2)
+    .column_spacing(0)
     .row_highlight_style(Style::default().bg(SELECTED_BG));
     frame.render_widget(table, area);
 }

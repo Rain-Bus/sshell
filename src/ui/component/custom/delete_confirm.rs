@@ -12,6 +12,6 @@ pub fn draw_delete_confirm(frame: &mut ratatui::Frame<'_>, app: &App) {
         7,
         RED,
         " Confirm Delete ",
-        &format!("Delete connection '{name}'?\n\n  Enter confirm  ·  Esc cancel"),
+        &format!("Delete connection '{name}'?\n\n  [Y] Yes  ·  [N] No"),
     );
 }

@@ -181,7 +181,7 @@ pub fn draw_connection_list(frame: &mut Frame<'_>, app: &App, area: Rect) {
             .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
     )
     .block(panel(title))
-    .column_spacing(2)
+    .column_spacing(0)
     .row_highlight_style(Style::default().bg(SELECTED_BG));
     frame.render_widget(table, area);
 }
@@ -220,7 +220,7 @@ fn connection_row(
         Style::default().fg(TEXT)
     };
     let is_shell = matches!(profile.kind, ConnectionType::Shell { .. });
-    let type_badge = if is_shell { "[SHL]" } else { "[SSH]" };
+    let type_badge = if is_shell { "SHL" } else { "SSH" };
     let badge_color = if is_shell { PURPLE } else { ACCENT };
 
     let target = match &profile.kind {
@@ -259,16 +259,23 @@ fn connection_row(
         _ => MUTED,
     };
 
+    let badge_style = if selected {
+        Style::default().fg(badge_color).bg(SELECTED_BG).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(crate::ui::BG).bg(badge_color).add_modifier(Modifier::BOLD)
+    };
+
     Row::new([
         Cell::from(format!("{marker} {}", display_name(name))).style(row_style),
-        Cell::from(type_badge).style(
-            Style::default()
-                .fg(crate::ui::BG)
-                .bg(badge_color)
-                .add_modifier(Modifier::BOLD),
-        ),
+        Cell::from(Line::from(vec![
+            Span::styled(format!(" {} ", type_badge), badge_style),
+        ])).style(row_style),
         Cell::from(target).style(row_style),
-        Cell::from(auth_state).style(Style::default().fg(auth_color)),
+        Cell::from(auth_state).style(if selected {
+            Style::default().fg(auth_color).bg(SELECTED_BG)
+        } else {
+            Style::default().fg(auth_color)
+        }),
     ])
     .height(1)
 }
@@ -295,7 +302,7 @@ pub fn draw_detail_panel(frame: &mut Frame<'_>, app: &App, area: Rect) {
     let mut lines: Vec<Line> = Vec::new();
 
     let is_shell = matches!(profile.kind, ConnectionType::Shell { .. });
-    let badge = if is_shell { "[SHL]" } else { "[SSH]" };
+    let badge = if is_shell { "SHL" } else { "SSH" };
     let badge_color = if is_shell { PURPLE } else { ACCENT };
     lines.push(Line::raw(""));
     lines.push(Line::from(vec![
@@ -553,12 +560,14 @@ impl View for DeleteConfirmView {
 
     fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Esc => app.session.mode = Mode::Home,
-            KeyCode::Enter => {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
                 match app.delete_selected() {
                     Ok(()) => app.toast("deleted", true),
                     Err(err) => app.toast(err.to_string(), false),
                 }
+                app.session.mode = Mode::Home;
+            }
+            KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
                 app.session.mode = Mode::Home;
             }
             _ => {}

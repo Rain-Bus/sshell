@@ -54,8 +54,8 @@ fn form_hints() -> Vec<Hint> {
 
 fn delete_hints() -> Vec<Hint> {
     vec![
-        Hint { key: "Enter", desc: "confirm" },
-        Hint { key: "Esc", desc: "cancel" },
+        Hint { key: "Y", desc: "yes" },
+        Hint { key: "N", desc: "no" },
     ]
 }
 

@@ -25,7 +25,7 @@ pub fn draw_dialog(
             Block::default()
                 .title(title.to_string())
                 .borders(Borders::ALL)
-                .border_type(BorderType::Plain)
+                .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(border_color))
                 .bg(PANEL),
         )

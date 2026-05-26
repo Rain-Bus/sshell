@@ -1,6 +1,5 @@
 use crate::app::{App, Mode};
-use crate::ui::component::common::layout::centered_rect;
-use crate::ui::{ACCENT, PANEL, SELECTED_BG, TEXT};
+use crate::ui::{ACCENT, MUTED, PANEL, SELECTED_BG, TEXT};
 
 use super::View;
 
@@ -10,7 +9,8 @@ use ratatui::{
     Frame,
     layout::Rect,
     style::{Modifier, Style, Stylize},
-    widgets::{Block, Borders, Clear, ListItem, ListState},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Clear, ListState},
 };
 
 const ACTIONS: &[(&str, &str)] = &[
@@ -24,17 +24,27 @@ const ACTIONS: &[(&str, &str)] = &[
 pub struct ActionMenuView;
 
 impl View for ActionMenuView {
-    fn draw(&self, frame: &mut Frame<'_>, _app: &App, _area: Rect) {
-        let width = 44u16;
-        let height = (ACTIONS.len() as u16) + 4;
-        let area = centered_rect(width, height, frame.area());
+    fn draw(&self, frame: &mut Frame<'_>, _app: &App, area: Rect) {
+        let list_width = 52u16.min(area.width.saturating_sub(4));
+        let list_height = (ACTIONS.len() as u16 + 4).min(area.height);
+        let x = area.x + (area.width.saturating_sub(list_width)) / 2;
+        let y = area.y + (area.height.saturating_sub(list_height)) / 2;
+        let list_area = Rect {
+            x,
+            y,
+            width: list_width,
+            height: list_height,
+        };
 
-        frame.render_widget(Clear, area);
+        frame.render_widget(Clear, list_area);
 
-        let items: Vec<ListItem<'_>> = ACTIONS
+        let items: Vec<Line<'_>> = ACTIONS
             .iter()
             .map(|(label, desc)| {
-                ListItem::new(format!("  {label:<14}{desc}"))
+                Line::from(vec![
+                    Span::styled(format!("  {label:<14}"), Style::default().fg(TEXT)),
+                    Span::styled(desc.to_string(), Style::default().fg(MUTED)),
+                ])
             })
             .collect();
 
@@ -44,6 +54,7 @@ impl View for ActionMenuView {
                     .title(" Actions ")
                     .title_style(Style::default().fg(ACCENT).bold())
                     .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
                     .border_style(Style::default().fg(ACCENT))
                     .bg(PANEL),
             )
@@ -58,7 +69,7 @@ impl View for ActionMenuView {
         let mut state = ListState::default();
         state.select(Some(_app.session.action_menu.cursor));
 
-        frame.render_stateful_widget(list, area, &mut state);
+        frame.render_stateful_widget(list, list_area, &mut state);
     }
 
     fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()> {

@@ -21,7 +21,7 @@ pub fn draw_input(
             Block::default()
                 .title(title.to_string())
                 .borders(Borders::ALL)
-                .border_type(BorderType::Plain)
+                .border_type(BorderType::Rounded)
                 .border_style(if focused {
                     Style::default().fg(ACCENT)
                 } else {

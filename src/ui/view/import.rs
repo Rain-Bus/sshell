@@ -69,8 +69,13 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
             .as_ref()
             .map(|c| format!("conflict: {}", c.name))
             .unwrap_or_else(|| "-".to_string());
+        let check_cell_style = if selected_row {
+            Style::default().bg(SELECTED_BG)
+        } else {
+            Style::default()
+        };
         rows.push(Row::new([
-            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
+            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style.patch(check_cell_style)),
             Cell::from(item.name.clone()).style(style),
             Cell::from(item.path.display().to_string()).style(style),
             Cell::from(status).style(style),
@@ -98,8 +103,13 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
         } else {
             Style::default().fg(MUTED)
         };
+        let check_cell_style = if selected_row {
+            Style::default().bg(SELECTED_BG)
+        } else {
+            Style::default()
+        };
         rows.push(Row::new([
-            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style),
+            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style.patch(check_cell_style)),
             Cell::from(item.name.clone()).style(style),
             Cell::from(format!("{}@{}:{}", item.user, item.host, item.port)).style(style),
             Cell::from(
@@ -146,7 +156,8 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
         "Import",
         "Space toggle  a all  A none  Enter import  Esc cancel",
     ))
-    .column_spacing(2);
+    .column_spacing(0)
+    .row_highlight_style(Style::default().bg(SELECTED_BG));
     frame.render_widget(table, area);
 }
 

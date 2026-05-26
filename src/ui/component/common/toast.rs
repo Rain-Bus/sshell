@@ -1,7 +1,7 @@
 use crate::ui::{GREEN, PANEL_ALT, RED};
 use ratatui::{
     style::{Style, Stylize},
-    widgets::{Block, Borders, Clear, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
 pub fn draw_toast(frame: &mut ratatui::Frame<'_>, message: &str, success: bool) {
@@ -19,6 +19,7 @@ pub fn draw_toast(frame: &mut ratatui::Frame<'_>, message: &str, success: bool) 
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(border_color))
                 .bg(PANEL_ALT),
         )
