@@ -1,0 +1,17 @@
+/target
+debug/
+*.pdb
+
+*.rlib
+*.d
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+.DS_Store
+Thumbs.db
+
+.env
