@@ -1,5 +1,6 @@
 use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
-use crate::{connection, gist, import, s3, ui, webdav};
+use crate::sync::{gist, s3, webdav};
+use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use std::path::Path;

@@ -65,9 +65,9 @@ impl App {
 
     pub fn push_sync_with_toast(&mut self) {
         let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::gist::push(&mut self.config).map(|id| format!("pushed ({id})")),
-            SyncBackend::Webdav => crate::webdav::push(&mut self.config).map(|_| "pushed".to_string()),
-            SyncBackend::S3 => crate::s3::push(&mut self.config).map(|_| "pushed".to_string()),
+            SyncBackend::Gist => crate::sync::gist::push(&mut self.config).map(|id| format!("pushed ({id})")),
+            SyncBackend::Webdav => crate::sync::webdav::push(&mut self.config).map(|_| "pushed".to_string()),
+            SyncBackend::S3 => crate::sync::s3::push(&mut self.config).map(|_| "pushed".to_string()),
         };
         match result {
             Ok(msg) => self.toast(msg, true),
@@ -77,9 +77,9 @@ impl App {
 
     pub fn pull_sync_with_toast(&mut self) {
         let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::gist::pull_with_strategy(&mut self.config, crate::gist::PullStrategy::Merge),
-            SyncBackend::Webdav => crate::webdav::pull_with_strategy(&mut self.config, crate::gist::PullStrategy::Merge),
-            SyncBackend::S3 => crate::s3::pull_with_strategy(&mut self.config, crate::gist::PullStrategy::Merge),
+            SyncBackend::Gist => crate::sync::gist::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
+            SyncBackend::Webdav => crate::sync::webdav::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
+            SyncBackend::S3 => crate::sync::s3::pull_with_strategy(&mut self.config, crate::sync::gist::PullStrategy::Merge),
         };
         match result {
             Ok(count) => self.toast(format!("pulled {count} items"), true),

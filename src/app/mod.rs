@@ -1,8 +1,5 @@
-mod cred_ops;
-mod form_ops;
 mod home_ops;
 mod profile_ext;
-mod settings_ops;
 mod types;
 
 pub mod cred;

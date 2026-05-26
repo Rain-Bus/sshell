@@ -1,12 +1,9 @@
 mod action_menu;
 mod cred_form;
 mod cred_list;
-mod delete_confirm_view;
 mod form;
 mod home_list;
 mod import;
-mod quick_select;
-mod search;
 mod settings;
 
 use crate::app::App;
@@ -27,12 +24,9 @@ pub trait View {
 pub use action_menu::ActionMenuView;
 pub use cred_form::CredFormView;
 pub use cred_list::CredListView;
-pub use delete_confirm_view::DeleteConfirmView;
 pub use form::FormView;
-pub use home_list::HomeListView;
+pub use home_list::{DeleteConfirmView, HomeListView, QuickSelectView, SearchView};
 pub use import::ImportView;
-pub use quick_select::QuickSelectView;
-pub use search::SearchView;
 pub use settings::SettingsView;
 
 /// Scroll a 1:1 row list so the selected index stays visible.
