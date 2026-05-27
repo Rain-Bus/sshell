@@ -1,7 +1,10 @@
 use super::{ConnectionProfile, ConnectionSource, ConnectionType, ShellCandidate, ShellScanConflict};
 use anyhow::{Result, bail};
+#[cfg(unix)]
 use std::fs;
-use std::path::{Path, PathBuf};
+#[cfg(not(unix))]
+use std::path::Path;
+use std::path::{PathBuf};
 
 impl super::SshellConfig {
     pub fn local_shell_candidates(&self) -> Vec<ShellCandidate> {
@@ -27,8 +30,38 @@ impl super::SshellConfig {
                 name: base_name.to_string(),
                 path,
                 conflict,
+                #[cfg(not(unix))]
+                wsl_distro: None,
             });
         }
+
+        #[cfg(not(unix))]
+        {
+            let wsl_path = PathBuf::from("wsl.exe");
+            for distro in wsl_distributions() {
+                let name = format!("wsl-{distro}");
+                let command = format!("wsl.exe -d {distro}");
+                if self.connections.values().any(|profile| {
+                    matches!(&profile.kind, ConnectionType::Shell { command: existing, .. } if existing == &command)
+                }) {
+                    continue;
+                }
+                let conflict = self
+                    .connections
+                    .contains_key(&format!("${name}"))
+                    .then(|| ShellScanConflict {
+                        name: name.clone(),
+                        path: wsl_path.clone(),
+                    });
+                out.push(ShellCandidate {
+                    name,
+                    path: wsl_path.clone(),
+                    conflict,
+                    wsl_distro: Some(distro),
+                });
+            }
+        }
+
         out
     }
 
@@ -63,7 +96,7 @@ impl super::SshellConfig {
         if candidate.conflict.is_some() || self.connections.contains_key(&key) {
             bail!("shell name conflict: {}", candidate.name);
         }
-        let command = candidate.path.to_string_lossy().to_string();
+        let (command, local_args) = make_shell_command_args(candidate);
         if self.connections.values().any(|profile| {
             matches!(&profile.kind, ConnectionType::Shell { command: existing, .. } if existing == &command)
         }) {
@@ -82,7 +115,7 @@ impl super::SshellConfig {
                     auth_ref: None,
                     command,
                     sync_args: Vec::new(),
-                    local_args: Vec::new(),
+                    local_args,
                     sync: false,
                 },
             },
@@ -164,10 +197,19 @@ fn local_shell_paths() -> Vec<PathBuf> {
     out
 }
 
+#[cfg(not(unix))]
+fn same_file_name(a: &Path, b: &Path) -> bool {
+    a.file_name().is_some_and(|a_name| {
+        b.file_name().is_some_and(|b_name| a_name.eq_ignore_ascii_case(b_name))
+    })
+}
+
+#[cfg(unix)]
 fn same_file_name(a: &Path, b: &Path) -> bool {
     a.file_name() == b.file_name()
 }
 
+#[cfg(unix)]
 fn is_executable_file(path: &Path) -> bool {
     path.is_file() && is_executable(path)
 }
@@ -181,12 +223,44 @@ fn is_executable(path: &Path) -> bool {
 }
 
 #[cfg(not(unix))]
-fn is_executable(path: &Path) -> bool {
-    let exts = [
-        std::ffi::OsStr::new("exe"),
-        std::ffi::OsStr::new("cmd"),
-        std::ffi::OsStr::new("bat"),
-        std::ffi::OsStr::new("ps1"),
-    ];
-    path.extension().is_some_and(|ext| exts.contains(&ext))
+fn make_shell_command_args(candidate: &ShellCandidate) -> (String, Vec<String>) {
+    if let Some(distro) = &candidate.wsl_distro {
+        (
+            "wsl.exe".to_string(),
+            vec!["-d".to_string(), distro.clone()],
+        )
+    } else {
+        (candidate.path.to_string_lossy().to_string(), Vec::new())
+    }
 }
+
+#[cfg(unix)]
+fn make_shell_command_args(candidate: &ShellCandidate) -> (String, Vec<String>) {
+    (candidate.path.to_string_lossy().to_string(), Vec::new())
+}
+
+#[cfg(not(unix))]
+fn wsl_distributions() -> Vec<String> {
+    use std::process::Command;
+    let output = match Command::new("wsl.exe").args(["-l", "-q"]).output() {
+        Ok(o) => o,
+        Err(_) => return Vec::new(),
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+    let raw = output.stdout;
+    if raw.len() < 2 {
+        return Vec::new();
+    }
+    let u16_iter = raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]]));
+    let decoded = String::from_utf16_lossy(&u16_iter.collect::<Vec<u16>>());
+    decoded
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| line.replace('\0', ""))
+        .filter(|line| !line.is_empty())
+        .collect()
+}
+

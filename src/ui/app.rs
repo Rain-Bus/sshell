@@ -2,7 +2,7 @@ use crate::app::{App, Mode};
 use anyhow::Result;
 use crossterm::{
     cursor::{Hide, Show},
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -31,6 +31,7 @@ pub fn run() -> Result<()> {
         }
         if event::poll(Duration::from_millis(200))?
             && let Event::Key(key) = event::read()?
+            && key.kind == KeyEventKind::Press
         {
             handle_key(&mut app, key)?;
         }

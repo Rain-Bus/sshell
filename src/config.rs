@@ -39,6 +39,8 @@ pub struct ShellCandidate {
     pub name: String,
     pub path: PathBuf,
     pub conflict: Option<ShellScanConflict>,
+    #[cfg(not(unix))]
+    pub wsl_distro: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
