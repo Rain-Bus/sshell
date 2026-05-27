@@ -1,6 +1,6 @@
 use crate::app::{App, Mode};
 use crate::config::CredentialEntry;
-use crate::ui::component::panel;
+use crate::ui::component::{ListAction, handle_list_nav, panel};
 use crate::ui::{BLUE, GREEN, MUTED, RED, SELECTED_BG, TEXT};
 
 use super::{View, scroll_rows};
@@ -118,35 +118,18 @@ fn draw_credentials(frame: &mut Frame<'_>, app: &App, area: Rect) {
 // ── Key handling ───────────────────────────────────────────────
 
 fn handle_credentials(app: &mut App, key: KeyEvent) -> Result<()> {
-    match key.code {
-        KeyCode::Esc => app.session.mode = Mode::Home,
-        KeyCode::Down | KeyCode::Char('j') => {
-            let len = app.config.credentials.entries.len();
-            if len > 0 {
-                app.session.credentials.selected = (app.session.credentials.selected as isize + 1)
-                    .rem_euclid(len as isize)
-                    as usize;
-            }
-        }
-        KeyCode::Up | KeyCode::Char('k') => {
-            let len = app.config.credentials.entries.len();
-            if len > 0 {
-                app.session.credentials.selected = (app.session.credentials.selected as isize - 1)
-                    .rem_euclid(len as isize)
-                    as usize;
-            }
-        }
-        KeyCode::Enter => {
-            app.edit_cred_form();
-        }
-        KeyCode::Char('a') => {
-            app.new_cred_form();
-        }
-        KeyCode::Char('d') => match app.delete_cred() {
-            Ok(()) => app.toast("deleted", true),
-            Err(err) => app.toast(err.to_string(), false),
+    let len = app.config.credentials.entries.len();
+    match handle_list_nav(&mut app.session.credentials.selected, len, key) {
+        ListAction::Cancel => app.session.mode = Mode::Home,
+        ListAction::Select => app.edit_cred_form(),
+        ListAction::None => match key.code {
+            KeyCode::Char('a') => app.new_cred_form(),
+            KeyCode::Char('d') => match app.delete_cred() {
+                Ok(()) => app.toast("deleted", true),
+                Err(err) => app.toast(err.to_string(), false),
+            },
+            _ => {}
         },
-        _ => {}
     }
     Ok(())
 }

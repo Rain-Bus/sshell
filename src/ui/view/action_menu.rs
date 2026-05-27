@@ -1,4 +1,5 @@
 use crate::app::{App, Mode};
+use crate::ui::component::{ListAction, handle_list_nav};
 use crate::ui::{ACCENT, MUTED, PANEL, SELECTED_BG, TEXT};
 
 use super::View;
@@ -82,20 +83,15 @@ impl View for ActionMenuView {
     }
 
     fn handle_key(&self, app: &mut App, key: KeyEvent) -> Result<()> {
-        let len = ACTIONS.len();
-        match key.code {
-            KeyCode::Char(':') | KeyCode::Esc => {
+        if key.code == KeyCode::Char(':') {
+            app.session.mode = Mode::Home;
+            return Ok(());
+        }
+        match handle_list_nav(&mut app.session.action_menu.cursor, ACTIONS.len(), key) {
+            ListAction::Cancel => {
                 app.session.mode = Mode::Home;
             }
-            KeyCode::Down | KeyCode::Char('j') => {
-                app.session.action_menu.cursor =
-                    (app.session.action_menu.cursor + 1) % len;
-            }
-            KeyCode::Up | KeyCode::Char('k') => {
-                app.session.action_menu.cursor =
-                    (app.session.action_menu.cursor + len - 1) % len;
-            }
-            KeyCode::Enter => {
+            ListAction::Select => {
                 app.session.mode = Mode::Home;
                 match app.session.action_menu.cursor {
                     0 => app.enter_combined_import()?,

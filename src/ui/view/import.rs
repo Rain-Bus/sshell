@@ -1,5 +1,5 @@
 use crate::app::App;
-use crate::ui::component::{panel, panel_with_subtitle};
+use crate::ui::component::{ListAction, handle_list_nav, panel, panel_with_subtitle};
 use crate::ui::{BLUE, GREEN, MUTED, SELECTED_BG, TEXT};
 
 use super::View;
@@ -189,48 +189,9 @@ fn handle_import(app: &mut App, key: KeyEvent) -> Result<()> {
     let shell_len = app.session.import.shell_candidates.len();
     let total = shell_len + app.session.import.candidates.len();
 
-    match key.code {
-        KeyCode::Esc => app.session.mode = crate::app::Mode::Home,
-        KeyCode::Down | KeyCode::Char('j') if total > 0 => {
-            app.session.import.cursor = (app.session.import.cursor + 1) % total;
-        }
-        KeyCode::Up | KeyCode::Char('k') if total > 0 => {
-            app.session.import.cursor = (app.session.import.cursor + total - 1) % total;
-        }
-        KeyCode::Char(' ') => {
-            if app.session.import.cursor < shell_len {
-                let can_toggle = app
-                    .session
-                    .import
-                    .shell_candidates
-                    .get(app.session.import.cursor)
-                    .is_some_and(|c| c.conflict.is_none());
-                if can_toggle
-                    && let Some(v) = app.session.import.shell_selected.get_mut(app.session.import.cursor)
-                {
-                    *v = !*v;
-                }
-            } else {
-                let ssh_idx = app.session.import.cursor - shell_len;
-                if let Some(v) = app.session.import.selected.get_mut(ssh_idx) {
-                    *v = !*v;
-                }
-            }
-        }
-        KeyCode::Char('a') => {
-            app.session
-                .import
-                .shell_selected
-                .iter_mut()
-                .zip(&app.session.import.shell_candidates)
-                .for_each(|(sel, c)| *sel = c.conflict.is_none());
-            app.session.import.selected.fill(true);
-        }
-        KeyCode::Char('A') => {
-            app.session.import.shell_selected.fill(false);
-            app.session.import.selected.fill(false);
-        }
-        KeyCode::Enter => {
+    match handle_list_nav(&mut app.session.import.cursor, total, key) {
+        ListAction::Cancel => app.session.mode = crate::app::Mode::Home,
+        ListAction::Select => {
             let mut imported = 0;
             let picked_shells: Vec<_> = app
                 .session
@@ -272,7 +233,43 @@ fn handle_import(app: &mut App, key: KeyEvent) -> Result<()> {
             }
             app.session.mode = crate::app::Mode::Home;
         }
-        _ => {}
+        ListAction::None => match key.code {
+            KeyCode::Char(' ') => {
+                if app.session.import.cursor < shell_len {
+                    let can_toggle = app
+                        .session
+                        .import
+                        .shell_candidates
+                        .get(app.session.import.cursor)
+                        .is_some_and(|c| c.conflict.is_none());
+                    if can_toggle
+                        && let Some(v) =
+                            app.session.import.shell_selected.get_mut(app.session.import.cursor)
+                    {
+                        *v = !*v;
+                    }
+                } else {
+                    let ssh_idx = app.session.import.cursor - shell_len;
+                    if let Some(v) = app.session.import.selected.get_mut(ssh_idx) {
+                        *v = !*v;
+                    }
+                }
+            }
+            KeyCode::Char('a') => {
+                app.session
+                    .import
+                    .shell_selected
+                    .iter_mut()
+                    .zip(&app.session.import.shell_candidates)
+                    .for_each(|(sel, c)| *sel = c.conflict.is_none());
+                app.session.import.selected.fill(true);
+            }
+            KeyCode::Char('A') => {
+                app.session.import.shell_selected.fill(false);
+                app.session.import.selected.fill(false);
+            }
+            _ => {}
+        },
     }
     Ok(())
 }
