@@ -1,8 +1,37 @@
-use crate::config::{ConnectionType, CredentialEntry, SshellConfig};
+use crate::config::{ConnectionType, CredentialEntry, SshellConfig, find_binary};
 use anyhow::{Context, Result, bail};
 use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
+
+fn require_binary(name: &str) -> Result<()> {
+    if find_binary(name).is_some() {
+        return Ok(());
+    }
+    let hint = match name {
+        "ssh" => "\n\
+            sshell requires `ssh` to connect via SSH.\n\
+            \n\
+            Install it with:\n\
+              macOS:    pre-installed (or: xcode-select --install)\n\
+              Debian:   sudo apt install openssh-client\n\
+              Arch:     sudo pacman -S openssh\n\
+              Fedora:   sudo dnf install openssh-clients\n\
+              Windows:  Settings → Apps → Optional Features → OpenSSH Client"
+            ,
+        "sshpass" => "\n\
+            Password-based SSH login requires `sshpass`.\n\
+            Consider switching to private-key auth instead, or install it:\n\
+              macOS:    brew install hudochenkov/sshpass/sshpass\n\
+              Debian:   sudo apt install sshpass\n\
+              Arch:     sudo pacman -S sshpass\n\
+              Fedora:   sudo dnf install sshpass\n\
+              Windows:  not available — use private-key auth"
+            ,
+        _ => "",
+    };
+    bail!("command not found: `{name}`{hint}");
+}
 
 pub fn connect(name: &str, cfg: &SshellConfig) -> Result<()> {
     let profile = cfg
@@ -41,8 +70,10 @@ fn connect_ssh(
     if auth_ref.is_empty() {
         bail!("this connection has no credential; edit it and set password or private key");
     }
+    require_binary("ssh")?;
     match cfg.credential(auth_ref) {
         Some(CredentialEntry::Password { value, .. }) => {
+            require_binary("sshpass")?;
             let args = vec![
                 "ssh".to_string(),
                 "-o".to_string(),
@@ -87,7 +118,7 @@ fn run_sshpass(args: &[String], password: &str) -> Result<()> {
         .args(args)
         .env("SSHPASS", password)
         .status()
-        .context("failed to run sshpass — is it installed?")?;
+        .context("failed to run sshpass")?;
     std::process::exit(status.code().unwrap_or(1));
 }
 

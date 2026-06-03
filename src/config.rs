@@ -64,8 +64,6 @@ pub struct Settings {
     pub s3_bucket: Option<String>,
     pub s3_access_key: Option<String>,
     pub s3_secret_key: Option<String>,
-    #[serde(default)]
-    pub sync_usage_count: bool,
     pub sync_password: Option<String>,
 }
 

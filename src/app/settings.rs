@@ -13,7 +13,6 @@ pub enum SettingsField {
     S3Bucket,
     S3AccessKey,
     S3SecretKey,
-    SyncUsage,
 }
 
 impl SettingsField {
@@ -37,7 +36,6 @@ impl SettingsField {
                 ]);
             }
         }
-        fields.push(SettingsField::SyncUsage);
         fields
     }
 
@@ -53,12 +51,11 @@ impl SettingsField {
             Self::S3Bucket => "Bucket",
             Self::S3AccessKey => "Access Key",
             Self::S3SecretKey => "Secret Key",
-            Self::SyncUsage => "Sync Usage",
-        }
+            }
     }
 
     pub fn is_toggle(self) -> bool {
-        matches!(self, Self::Backend | Self::SyncUsage)
+        matches!(self, Self::Backend)
     }
 
     pub fn is_text(self) -> bool {
@@ -78,7 +75,6 @@ pub struct SettingsState {
     pub s3_bucket: String,
     pub s3_access_key: String,
     pub s3_secret_key: String,
-    pub sync_usage: bool,
     pub active: SettingsField,
     pub cursor: usize,
 }
@@ -148,7 +144,6 @@ impl Default for SettingsState {
             s3_bucket: String::new(),
             s3_access_key: String::new(),
             s3_secret_key: String::new(),
-            sync_usage: false,
             active: SettingsField::SyncPassword,
             cursor: 0,
         }
@@ -225,7 +220,6 @@ impl App {
             self.config.settings.s3_access_key.clone().unwrap_or_default();
         self.session.settings.s3_secret_key =
             self.config.settings.s3_secret_key.clone().unwrap_or_default();
-        self.session.settings.sync_usage = self.config.settings.sync_usage_count;
         self.session.settings.active = SettingsField::SyncPassword;
         self.session.settings.cursor = char_len(self.session.settings.active_text());
         self.session.mode = Mode::Settings;
@@ -259,7 +253,6 @@ impl App {
         } else {
             Some(s3_sk)
         };
-        self.config.settings.sync_usage_count = self.session.settings.sync_usage;
         self.config.save()?;
         self.session.mode = Mode::Home;
         Ok(())

@@ -1,7 +1,7 @@
 use crate::app::{App, FormAction, Mode, SettingsField, SettingsState, char_len};
 use crate::config::SyncBackend;
 use crate::ui::component::{FormRow, badge_span};
-use crate::ui::{ACCENT, GREEN, ORANGE, PURPLE, RED};
+use crate::ui::{ACCENT, ORANGE, PURPLE};
 
 use super::{View, handle_form_nav};
 
@@ -31,7 +31,7 @@ impl View for SettingsView {
             let active = settings.active == field;
             let label = field.label().to_string();
 
-            if i == 2 || matches!(field, SettingsField::SyncUsage) {
+            if i == 2 {
                 rows.push(FormRow::Separator);
             }
 
@@ -42,13 +42,6 @@ impl View for SettingsView {
                         SyncBackend::Webdav => badge_span("WebDAV", ORANGE),
                         SyncBackend::S3 => badge_span("S3", PURPLE),
                     },
-                    SettingsField::SyncUsage => {
-                        if settings.sync_usage {
-                            badge_span("Yes", GREEN)
-                        } else {
-                            badge_span("No", RED)
-                        }
-                    }
                     _ => unreachable!(),
                 };
                 rows.push(FormRow::Toggle {
@@ -130,9 +123,6 @@ fn settings_toggle(settings: &mut SettingsState) {
                 SyncBackend::S3 => SyncBackend::Gist,
             };
             settings.ensure_active_visible();
-        }
-        SettingsField::SyncUsage => {
-            settings.sync_usage = !settings.sync_usage;
         }
         _ => {}
     }

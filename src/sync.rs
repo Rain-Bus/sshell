@@ -60,9 +60,6 @@ pub(crate) fn build_sync_payload(
     sync_password: Option<&str>,
 ) -> Result<toml::Value> {
     let mut payload = cfg.clone();
-    payload.settings.sync_password = None;
-    payload.settings.webdav_password = None;
-    payload.settings.s3_secret_key = None;
 
     let synced_refs: Vec<String> = payload
         .connections
@@ -90,14 +87,10 @@ pub(crate) fn build_sync_payload(
         "version".to_string(),
         toml::Value::Integer(payload.version as i64),
     );
-    table.insert("settings".to_string(), to_toml_value(&payload.settings)?);
-
     let mut conns = toml::map::Map::new();
     for (name, profile) in &mut payload.connections {
         profile.local_tags.clear();
-        if !payload.settings.sync_usage_count {
-            profile.usage_count = 0;
-        }
+        profile.usage_count = 0;
         match &mut profile.kind {
             ConnectionType::Shell {
                 auth_ref,
