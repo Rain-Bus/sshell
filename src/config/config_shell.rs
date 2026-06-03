@@ -2,9 +2,7 @@ use super::{ConnectionProfile, ConnectionSource, ConnectionType, ShellCandidate,
 use anyhow::{Result, bail};
 #[cfg(unix)]
 use std::fs;
-#[cfg(not(unix))]
-use std::path::Path;
-use std::path::{PathBuf};
+use std::path::{Path, PathBuf};
 
 impl super::SshellConfig {
     pub fn local_shell_candidates(&self) -> Vec<ShellCandidate> {
