@@ -60,22 +60,26 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary (Unix)
+      - name: Package (Unix)
         if: runner.os != 'Windows'
         run: |
-          cp target/${{ matrix.target }}/release/sshell ${{ matrix.artifact }}
-          chmod +x ${{ matrix.artifact }}
+          cp target/${{ matrix.target }}/release/sshell sshell
+          chmod +x sshell
+          tar czf ${{ matrix.artifact }}.tar.gz sshell
 
-      - name: Rename binary (Windows)
+      - name: Package (Windows)
         if: runner.os == 'Windows'
         run: |
-          copy target\${{ matrix.target }}\release\sshell.exe ${{ matrix.artifact }}
+          copy target\${{ matrix.target }}\release\sshell.exe sshell.exe
+          Compress-Archive -Path sshell.exe -DestinationPath ${{ matrix.artifact }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}.tar.gz
+            ${{ matrix.artifact }}.zip
 
   release:
     name: Create GitHub Release
@@ -93,4 +97,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: artifacts/*
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.zip
