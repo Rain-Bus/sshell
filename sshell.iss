@@ -39,7 +39,7 @@ OutputDir=.
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "addtopath"; Description: "Add sshell to PATH"; GroupDescription: "Environment:"; Flags: checked
+Name: "addtopath"; Description: "Add sshell to PATH"; GroupDescription: "Environment:"
 
 [Files]
 Source: "sshell.exe"; DestDir: "{app}"; Flags: ignoreversion
