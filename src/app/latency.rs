@@ -16,9 +16,19 @@ pub enum LatencyStatus {
     Unknown,
 }
 
+/// A cached probe result with a timestamp.
+#[derive(Debug, Clone)]
+pub struct CacheEntry {
+    pub status: LatencyStatus,
+    pub checked_at: Instant,
+}
+
+/// How long before a cached entry is considered stale and re-probed.
+pub const STALE_SECS: u64 = 30;
+
 /// Shared latency cache keyed by "host:port" strings.
 /// Background threads write, draw reads.
-pub type LatencyCache = Arc<Mutex<HashMap<String, LatencyStatus>>>;
+pub type LatencyCache = Arc<Mutex<HashMap<String, CacheEntry>>>;
 
 /// Perform a TCP connect to measure latency.
 /// Timeout is 3 seconds. Called from spawned threads.

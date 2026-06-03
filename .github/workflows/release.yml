@@ -126,12 +126,9 @@ jobs:
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.8
         env:
           SHELL_VERSION: ${{ env.SHELL_VERSION }}
+          SSH_TARGET: ${{ matrix.target }}
         with:
           path: sshell.iss
-          options: >-
-            /DMyArch=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
-            /DMyArchAllowed=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
-            /DMyArchInstall64=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

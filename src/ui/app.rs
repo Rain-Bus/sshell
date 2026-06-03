@@ -8,7 +8,6 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::collections::HashSet;
 use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -33,12 +32,12 @@ pub fn run() -> Result<()> {
         if app.session.should_quit {
             break;
         }
+        spawn_latency_probes(&app);
         if event::poll(Duration::from_millis(200))?
             && let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
             handle_key(&mut app, key)?;
-            spawn_latency_probes(&app);
         }
     }
 
@@ -90,25 +89,62 @@ fn handle_key(app: &mut App, key: KeyEvent) -> Result<()> {
 }
 
 fn spawn_latency_probes(app: &App) {
-    let cache = app.session.latency.lock().unwrap();
-    let existing: HashSet<String> = cache.keys().cloned().collect();
-    drop(cache);
+    use crate::app::latency::{CacheEntry, STALE_SECS};
+    use std::time::Instant;
 
+    let stale_duration = Duration::from_secs(STALE_SECS);
+    let now = Instant::now();
+
+    // Collect keys that need probing (missing or stale)
+    let cache = app.session.latency.lock().unwrap();
+    let mut to_probe: Vec<String> = Vec::new();
     for (_, profile) in app.entries() {
         if let ConnectionType::Ssh { host, port, .. } = &profile.kind {
             let key = format!("{host}:{port}");
-            if existing.contains(&key) {
-                continue;
+            let needs_probe = match cache.get(&key) {
+                None => true,
+                Some(entry) => now.duration_since(entry.checked_at) >= stale_duration,
+            };
+            if needs_probe && !to_probe.contains(&key) {
+                to_probe.push(key);
             }
-            let cache_clone = app.session.latency.clone();
-            let host = host.clone();
-            let port = *port;
-            std::thread::spawn(move || {
-                let status = crate::app::latency::probe(&host, port);
-                if let Ok(mut cache) = cache_clone.lock() {
-                    cache.insert(key, status);
+        }
+    }
+    drop(cache);
+
+    for key in to_probe {
+        // Re-check under lock to avoid duplicate spawns
+        {
+            let cache = app.session.latency.lock().unwrap();
+            if let Some(entry) = cache.get(&key) {
+                if now.duration_since(entry.checked_at) < stale_duration {
+                    continue;
                 }
+            }
+        }
+        // Mark as "in-flight" by inserting a fresh entry
+        {
+            let mut cache = app.session.latency.lock().unwrap();
+            cache.insert(key.clone(), CacheEntry {
+                status: crate::app::latency::LatencyStatus::Unknown,
+                checked_at: now,
             });
         }
+        let cache_clone = app.session.latency.clone();
+        let host_port = key.clone();
+        std::thread::spawn(move || {
+            let parts: Vec<&str> = host_port.splitn(2, ':').collect();
+            let (host, port) = match parts.as_slice() {
+                [h, p] => (*h, p.parse::<u16>().unwrap_or(22)),
+                _ => return,
+            };
+            let status = crate::app::latency::probe(host, port);
+            if let Ok(mut cache) = cache_clone.lock() {
+                cache.insert(host_port, CacheEntry {
+                    status,
+                    checked_at: Instant::now(),
+                });
+            }
+        });
     }
 }

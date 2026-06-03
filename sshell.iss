@@ -7,6 +7,16 @@
 #define MyAppURL "https://github.com/Rain-Bus/sshell"
 #define MyAppExeName "sshell.exe"
 
+#if GetEnv("SSH_TARGET") == "aarch64-pc-windows-msvc"
+  #define MyArch "arm64"
+  #define MyArchAllowed "arm64"
+  #define MyArchInstall64 "arm64"
+#else
+  #define MyArch "x64compatible"
+  #define MyArchAllowed "x64compatible"
+  #define MyArchInstall64 "x64compatible"
+#endif
+
 [Setup]
 AppId={{sshell-2024-1}
 AppName={#MyAppName}

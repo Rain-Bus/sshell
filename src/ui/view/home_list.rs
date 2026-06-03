@@ -269,7 +269,7 @@ fn connection_row(
         ConnectionType::Ssh { host, port, .. } => {
             let key = format!("{host}:{port}");
             let cache = app.session.latency.lock().unwrap();
-            match cache.get(&key) {
+            match cache.get(&key).map(|e| &e.status) {
                 Some(LatencyStatus::Reachable { ms }) => {
                     let text = format!("{ms} ms");
                     let color = if *ms < 100 {

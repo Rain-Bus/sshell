@@ -19,10 +19,10 @@ contents:
       mode: 0755
 
 deb:
-  compression: gz
+  compression: gzip
 
 rpm:
-  compression: gz
+  compression: gzip
 
 archlinux:
   pkgbase: sshell
