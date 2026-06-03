@@ -1,6 +1,6 @@
 #define MyAppName "sshell"
 #define MyAppVersion GetEnv("SHELL_VERSION")
-#ifndef MyAppVersion
+#if MyAppVersion == ""
   #define MyAppVersion "0.1.0"
 #endif
 #define MyAppPublisher "rain-bus"
@@ -62,6 +62,6 @@ begin
   if CurStep = ssPostInstall then
   begin
     // Notify the system that environment variables have changed
-    SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, LPARAM(PChar('Environment')));
+    SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, 0);
   end;
 end;
