@@ -58,14 +58,10 @@ const
   WM_SETTINGCHANGE = $001A;
 
 procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
 begin
   if CurStep = ssPostInstall then
   begin
     // Notify the system that environment variables have changed
-    RegWriteStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
-      'Path', RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path'));
-    Exec('cmd.exe', '/C echo %Path%', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, LPARAM(PChar('Environment')));
   end;
 end;
