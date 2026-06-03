@@ -1,7 +1,7 @@
 use crate::app::{App, FormAction, Mode, SettingsField, SettingsState, char_len};
 use crate::config::SyncBackend;
 use crate::ui::component::{FormRow, badge_span};
-use crate::ui::{ACCENT, ORANGE, PURPLE};
+use crate::ui::{ACCENT, ORANGE};
 
 use super::{View, handle_form_nav};
 
@@ -40,7 +40,6 @@ impl View for SettingsView {
                     SettingsField::Backend => match settings.backend {
                         SyncBackend::Gist => badge_span("Gist", ACCENT),
                         SyncBackend::Webdav => badge_span("WebDAV", ORANGE),
-                        SyncBackend::S3 => badge_span("S3", PURPLE),
                     },
                     _ => unreachable!(),
                 };
@@ -55,7 +54,6 @@ impl View for SettingsView {
                     field,
                     SettingsField::SyncPassword
                         | SettingsField::WebdavPassword
-                        | SettingsField::S3SecretKey
                 );
                 let (display, secret_cursor) = if is_secret {
                     if raw.is_empty() {
@@ -119,8 +117,7 @@ fn settings_toggle(settings: &mut SettingsState) {
         SettingsField::Backend => {
             settings.backend = match settings.backend {
                 SyncBackend::Gist => SyncBackend::Webdav,
-                SyncBackend::Webdav => SyncBackend::S3,
-                SyncBackend::S3 => SyncBackend::Gist,
+                SyncBackend::Webdav => SyncBackend::Gist,
             };
             settings.ensure_active_visible();
         }

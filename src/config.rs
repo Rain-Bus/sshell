@@ -49,7 +49,6 @@ pub enum SyncBackend {
     #[default]
     Gist,
     Webdav,
-    S3,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -60,10 +59,6 @@ pub struct Settings {
     pub webdav_url: Option<String>,
     pub webdav_user: Option<String>,
     pub webdav_password: Option<String>,
-    pub s3_endpoint: Option<String>,
-    pub s3_bucket: Option<String>,
-    pub s3_access_key: Option<String>,
-    pub s3_secret_key: Option<String>,
     pub sync_password: Option<String>,
 }
 

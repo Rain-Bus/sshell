@@ -1,5 +1,5 @@
 use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
-use crate::sync::{self, gist, s3, webdav};
+use crate::sync::{self, gist, webdav};
 use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -88,16 +88,11 @@ fn run_sync(command: SyncCommand) -> Result<()> {
                 webdav::push(&mut cfg)?;
                 println!("pushed");
             }
-            SyncBackend::S3 => {
-                s3::push(&mut cfg)?;
-                println!("pushed");
-            }
         },
         SyncCommand::Pull { strategy } => {
             let count = match cfg.settings.backend {
                 SyncBackend::Gist => gist::pull_with_strategy(&mut cfg, strat(strategy))?,
                 SyncBackend::Webdav => webdav::pull_with_strategy(&mut cfg, strat(strategy))?,
-                SyncBackend::S3 => s3::pull_with_strategy(&mut cfg, strat(strategy))?,
             };
             println!("pulled {count} items");
         }
@@ -124,7 +119,6 @@ fn doctor(name: Option<String>) -> Result<()> {
         match cfg.settings.backend {
             SyncBackend::Gist => "gist",
             SyncBackend::Webdav => "webdav",
-            SyncBackend::S3 => "s3",
         }
     );
     println!(

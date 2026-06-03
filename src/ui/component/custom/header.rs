@@ -1,6 +1,6 @@
 use crate::app::App;
 use crate::config::SyncBackend;
-use crate::ui::{ACCENT, BG, BLUE, DIM_BORDER, GREEN, MUTED, ORANGE, PANEL, PURPLE, TEXT};
+use crate::ui::{ACCENT, BG, BLUE, DIM_BORDER, GREEN, MUTED, ORANGE, PANEL, TEXT};
 use ratatui::{
     layout::{Alignment, Rect},
     style::{Color, Style, Stylize},
@@ -29,13 +29,6 @@ pub fn draw_header(frame: &mut ratatui::Frame<'_>, app: &App, title: &str, area:
                 ("webdav ready", ORANGE)
             } else {
                 ("webdav not set", MUTED)
-            }
-        }
-        SyncBackend::S3 => {
-            if app.config.settings.s3_endpoint.is_some() {
-                ("s3 ready", PURPLE)
-            } else {
-                ("s3 not set", MUTED)
             }
         }
     };

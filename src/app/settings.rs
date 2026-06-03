@@ -9,10 +9,6 @@ pub enum SettingsField {
     WebdavUrl,
     WebdavUser,
     WebdavPassword,
-    S3Endpoint,
-    S3Bucket,
-    S3AccessKey,
-    S3SecretKey,
 }
 
 impl SettingsField {
@@ -27,14 +23,6 @@ impl SettingsField {
                     SettingsField::WebdavPassword,
                 ]);
             }
-            SyncBackend::S3 => {
-                fields.extend_from_slice(&[
-                    SettingsField::S3Endpoint,
-                    SettingsField::S3Bucket,
-                    SettingsField::S3AccessKey,
-                    SettingsField::S3SecretKey,
-                ]);
-            }
         }
         fields
     }
@@ -47,10 +35,6 @@ impl SettingsField {
             Self::WebdavUrl => "URL",
             Self::WebdavUser => "Username",
             Self::WebdavPassword => "Password",
-            Self::S3Endpoint => "Endpoint",
-            Self::S3Bucket => "Bucket",
-            Self::S3AccessKey => "Access Key",
-            Self::S3SecretKey => "Secret Key",
             }
     }
 
@@ -71,10 +55,6 @@ pub struct SettingsState {
     pub webdav_url: String,
     pub webdav_user: String,
     pub webdav_password: String,
-    pub s3_endpoint: String,
-    pub s3_bucket: String,
-    pub s3_access_key: String,
-    pub s3_secret_key: String,
     pub active: SettingsField,
     pub cursor: usize,
 }
@@ -87,10 +67,6 @@ impl SettingsState {
             SettingsField::WebdavUrl => &self.webdav_url,
             SettingsField::WebdavUser => &self.webdav_user,
             SettingsField::WebdavPassword => &self.webdav_password,
-            SettingsField::S3Endpoint => &self.s3_endpoint,
-            SettingsField::S3Bucket => &self.s3_bucket,
-            SettingsField::S3AccessKey => &self.s3_access_key,
-            SettingsField::S3SecretKey => &self.s3_secret_key,
             _ => "",
         }
     }
@@ -140,10 +116,6 @@ impl Default for SettingsState {
             webdav_url: String::new(),
             webdav_user: String::new(),
             webdav_password: String::new(),
-            s3_endpoint: String::new(),
-            s3_bucket: String::new(),
-            s3_access_key: String::new(),
-            s3_secret_key: String::new(),
             active: SettingsField::SyncPassword,
             cursor: 0,
         }
@@ -158,10 +130,6 @@ impl TextEditing for SettingsState {
             SettingsField::WebdavUrl => &self.webdav_url,
             SettingsField::WebdavUser => &self.webdav_user,
             SettingsField::WebdavPassword => &self.webdav_password,
-            SettingsField::S3Endpoint => &self.s3_endpoint,
-            SettingsField::S3Bucket => &self.s3_bucket,
-            SettingsField::S3AccessKey => &self.s3_access_key,
-            SettingsField::S3SecretKey => &self.s3_secret_key,
             _ => "",
         }
     }
@@ -173,10 +141,6 @@ impl TextEditing for SettingsState {
             SettingsField::WebdavUrl => Some(&mut self.webdav_url),
             SettingsField::WebdavUser => Some(&mut self.webdav_user),
             SettingsField::WebdavPassword => Some(&mut self.webdav_password),
-            SettingsField::S3Endpoint => Some(&mut self.s3_endpoint),
-            SettingsField::S3Bucket => Some(&mut self.s3_bucket),
-            SettingsField::S3AccessKey => Some(&mut self.s3_access_key),
-            SettingsField::S3SecretKey => Some(&mut self.s3_secret_key),
             _ => None,
         }
     }
@@ -212,14 +176,6 @@ impl App {
             self.config.settings.webdav_user.clone().unwrap_or_default();
         self.session.settings.webdav_password =
             self.config.settings.webdav_password.clone().unwrap_or_default();
-        self.session.settings.s3_endpoint =
-            self.config.settings.s3_endpoint.clone().unwrap_or_default();
-        self.session.settings.s3_bucket =
-            self.config.settings.s3_bucket.clone().unwrap_or_default();
-        self.session.settings.s3_access_key =
-            self.config.settings.s3_access_key.clone().unwrap_or_default();
-        self.session.settings.s3_secret_key =
-            self.config.settings.s3_secret_key.clone().unwrap_or_default();
         self.session.settings.active = SettingsField::SyncPassword;
         self.session.settings.cursor = char_len(self.session.settings.active_text());
         self.session.mode = Mode::Settings;
@@ -240,18 +196,6 @@ impl App {
             None
         } else {
             Some(wd_pw)
-        };
-        let s3_ep = self.session.settings.s3_endpoint.trim().to_string();
-        self.config.settings.s3_endpoint = if s3_ep.is_empty() { None } else { Some(s3_ep) };
-        let s3_bk = self.session.settings.s3_bucket.trim().to_string();
-        self.config.settings.s3_bucket = if s3_bk.is_empty() { None } else { Some(s3_bk) };
-        let s3_ak = self.session.settings.s3_access_key.trim().to_string();
-        self.config.settings.s3_access_key = if s3_ak.is_empty() { None } else { Some(s3_ak) };
-        let s3_sk = self.session.settings.s3_secret_key.trim().to_string();
-        self.config.settings.s3_secret_key = if s3_sk.is_empty() {
-            None
-        } else {
-            Some(s3_sk)
         };
         self.config.save()?;
         self.session.mode = Mode::Home;

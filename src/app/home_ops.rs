@@ -67,7 +67,6 @@ impl App {
         let result = match self.config.settings.backend {
             SyncBackend::Gist => crate::sync::gist::push(&mut self.config).map(|id| format!("pushed ({id})")),
             SyncBackend::Webdav => crate::sync::webdav::push(&mut self.config).map(|_| "pushed".to_string()),
-            SyncBackend::S3 => crate::sync::s3::push(&mut self.config).map(|_| "pushed".to_string()),
         };
         match result {
             Ok(msg) => self.toast(msg, true),
@@ -79,7 +78,6 @@ impl App {
         let result = match self.config.settings.backend {
             SyncBackend::Gist => crate::sync::gist::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
             SyncBackend::Webdav => crate::sync::webdav::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
-            SyncBackend::S3 => crate::sync::s3::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
         };
         match result {
             Ok(count) => self.toast(format!("pulled {count} items"), true),

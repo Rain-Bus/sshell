@@ -1,6 +1,5 @@
 mod crypto;
 pub mod gist;
-pub mod s3;
 pub mod webdav;
 
 use crate::config::ConnectionType;
