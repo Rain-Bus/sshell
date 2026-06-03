@@ -1,4 +1,5 @@
 use crate::app::{App, Mode};
+use crate::config::ConnectionType;
 use anyhow::Result;
 use crossterm::{
     cursor::{Hide, Show},
@@ -7,6 +8,7 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
+use std::collections::HashSet;
 use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -24,6 +26,8 @@ pub fn run() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
     let mut app = App::load()?;
 
+    spawn_latency_probes(&app);
+
     loop {
         terminal.draw(|frame| super::draw(frame, &mut app))?;
         if app.session.should_quit {
@@ -34,6 +38,7 @@ pub fn run() -> Result<()> {
             && key.kind == KeyEventKind::Press
         {
             handle_key(&mut app, key)?;
+            spawn_latency_probes(&app);
         }
     }
 
@@ -81,5 +86,29 @@ fn handle_key(app: &mut App, key: KeyEvent) -> Result<()> {
         Mode::Credentials => CredListView.handle_key(app, key),
         Mode::CredForm => CredFormView.handle_key(app, key),
         Mode::Settings => SettingsView.handle_key(app, key),
+    }
+}
+
+fn spawn_latency_probes(app: &App) {
+    let cache = app.session.latency.lock().unwrap();
+    let existing: HashSet<String> = cache.keys().cloned().collect();
+    drop(cache);
+
+    for (_, profile) in app.entries() {
+        if let ConnectionType::Ssh { host, port, .. } = &profile.kind {
+            let key = format!("{host}:{port}");
+            if existing.contains(&key) {
+                continue;
+            }
+            let cache_clone = app.session.latency.clone();
+            let host = host.clone();
+            let port = *port;
+            std::thread::spawn(move || {
+                let status = crate::app::latency::probe(&host, port);
+                if let Ok(mut cache) = cache_clone.lock() {
+                    cache.insert(key, status);
+                }
+            });
+        }
     }
 }

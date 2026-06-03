@@ -2,6 +2,7 @@ use crate::import::ImportCandidate;
 
 use super::cred::CredFormState;
 use super::form::FormState;
+use super::latency::LatencyCache;
 use super::settings::SettingsState;
 
 // ── Text editing trait ──────────────────────────────────────
@@ -183,6 +184,7 @@ pub struct Session {
     pub toast: Option<Toast>,
     pub should_quit: bool,
     pub settings: SettingsState,
+    pub latency: LatencyCache,
 }
 
 #[derive(Debug, Clone)]
@@ -219,6 +221,7 @@ impl Session {
             toast: None,
             should_quit: false,
             settings: SettingsState::default(),
+            latency: LatencyCache::default(),
         }
     }
 }

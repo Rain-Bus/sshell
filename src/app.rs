@@ -1,4 +1,5 @@
 mod home_ops;
+pub mod latency;
 mod profile_ext;
 mod types;
 

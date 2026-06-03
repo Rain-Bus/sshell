@@ -22,9 +22,11 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: sshell-x86_64-linux
+            nfpm_arch: amd64
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             artifact: sshell-aarch64-linux
+            nfpm_arch: arm64
           # macOS
           - os: macos-latest
             target: aarch64-apple-darwin
@@ -35,10 +37,10 @@ jobs:
           # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: sshell-x86_64-windows.exe
+            artifact: sshell-x86_64-windows
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-            artifact: sshell-aarch64-windows.exe
+            artifact: sshell-aarch64-windows
 
     steps:
       - uses: actions/checkout@v4
@@ -60,18 +62,76 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Package (Unix)
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "SHELL_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Package binary archive (Unix)
         if: runner.os != 'Windows'
         run: |
           cp target/${{ matrix.target }}/release/sshell sshell
           chmod +x sshell
           tar czf ${{ matrix.artifact }}.tar.gz sshell
 
-      - name: Package (Windows)
+      - name: Package binary archive (Windows)
         if: runner.os == 'Windows'
         run: |
           copy target\${{ matrix.target }}\release\sshell.exe sshell.exe
           Compress-Archive -Path sshell.exe -DestinationPath ${{ matrix.artifact }}.zip
+
+      # --- Linux installer packages (nfpm) ---
+      - name: Install nfpm
+        if: runner.os == 'Linux'
+        uses: jaxxstorm/action-install-gh-release@v1.14.0
+        with:
+          repo: goreleaser/nfpm/v2
+          cache: enable
+
+      - name: Package .deb
+        if: runner.os == 'Linux'
+        env:
+          NFPM_ARCH: ${{ matrix.nfpm_arch }}
+          NFPM_VERSION: ${{ env.SHELL_VERSION }}
+        run: nfpm pkg --packager deb --target ${{ matrix.artifact }}.deb
+
+      - name: Package .rpm
+        if: runner.os == 'Linux'
+        env:
+          NFPM_ARCH: ${{ matrix.nfpm_arch }}
+          NFPM_VERSION: ${{ env.SHELL_VERSION }}
+        run: nfpm pkg --packager rpm --target ${{ matrix.artifact }}.rpm
+
+      - name: Package .pkg.tar.zst
+        if: runner.os == 'Linux'
+        env:
+          NFPM_ARCH: ${{ matrix.nfpm_arch }}
+          NFPM_VERSION: ${{ env.SHELL_VERSION }}
+        run: nfpm pkg --packager archlinux --target ${{ matrix.artifact }}.pkg.tar.zst
+
+      # --- macOS DMG ---
+      - name: Package .dmg
+        if: runner.os == 'macOS'
+        run: |
+          STAGING_DIR=$(mktemp -d)
+          cp sshell "$STAGING_DIR/sshell"
+          chmod +x "$STAGING_DIR/sshell"
+          hdiutil create -volname "sshell" -srcfolder "$STAGING_DIR" -ov -format UDZO ${{ matrix.artifact }}.dmg
+          rm -rf "$STAGING_DIR"
+
+      # --- Windows installer (Inno Setup) ---
+      - name: Compile Inno Setup installer
+        if: runner.os == 'Windows'
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.8
+        env:
+          SHELL_VERSION: ${{ env.SHELL_VERSION }}
+        with:
+          path: sshell.iss
+          options: >-
+            /DMyArch=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
+            /DMyArchAllowed=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
+            /DMyArchInstall64=${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64compatible' || 'arm64' }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -80,6 +140,11 @@ jobs:
           path: |
             ${{ matrix.artifact }}.tar.gz
             ${{ matrix.artifact }}.zip
+            ${{ matrix.artifact }}.deb
+            ${{ matrix.artifact }}.rpm
+            ${{ matrix.artifact }}.pkg.tar.zst
+            ${{ matrix.artifact }}.dmg
+            sshell-*-windows-setup.exe
 
   release:
     name: Create GitHub Release
@@ -100,3 +165,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.zip
+            artifacts/*.deb
+            artifacts/*.rpm
+            artifacts/*.pkg.tar.zst
+            artifacts/*.dmg
+            artifacts/*-windows-setup.exe

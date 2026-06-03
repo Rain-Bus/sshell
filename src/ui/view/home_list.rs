@@ -1,8 +1,9 @@
 use crate::app::{App, Mode};
 use crate::app::display_name;
+use crate::app::latency::LatencyStatus;
 use crate::config::{ConnectionSource, ConnectionType, CredentialEntry};
 use crate::ui::component::{badge_span, draw_input, panel, tag_badge};
-use crate::ui::{ACCENT, BLUE, GREEN, MUTED, PANEL_ALT, PURPLE, RED, SELECTED_BG, TEXT};
+use crate::ui::{ACCENT, BLUE, GREEN, MUTED, PANEL_ALT, PURPLE, RED, SELECTED_BG, TEXT, YELLOW};
 
 use super::View;
 
@@ -193,7 +194,7 @@ pub fn draw_connection_list(frame: &mut Frame<'_>, app: &App, area: Rect) {
         ],
     )
     .header(
-        Row::new(["  Name", "Type", "Target", "Auth"])
+        Row::new(["  Name", "Type", "Target", "Ping"])
             .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
     )
     .block(panel(title))
@@ -264,15 +265,27 @@ fn connection_row(
         }
     };
 
-    let auth_state = profile
-        .auth_ref()
-        .and_then(|auth| app.config.credential(auth))
-        .map(|cred| if cred.has_value() { "ready" } else { "empty" })
-        .unwrap_or("none");
-    let auth_color = match auth_state {
-        "ready" => GREEN,
-        "empty" => RED,
-        _ => MUTED,
+    let (ping_text, ping_color) = match &profile.kind {
+        ConnectionType::Ssh { host, port, .. } => {
+            let key = format!("{host}:{port}");
+            let cache = app.session.latency.lock().unwrap();
+            match cache.get(&key) {
+                Some(LatencyStatus::Reachable { ms }) => {
+                    let text = format!("{ms} ms");
+                    let color = if *ms < 100 {
+                        GREEN
+                    } else if *ms < 300 {
+                        YELLOW
+                    } else {
+                        RED
+                    };
+                    (text, color)
+                }
+                Some(LatencyStatus::Unreachable) => ("timeout".to_string(), RED),
+                _ => ("...".to_string(), MUTED),
+            }
+        }
+        ConnectionType::Shell { .. } => ("-".to_string(), MUTED),
     };
 
     let badge_style = if selected {
@@ -287,10 +300,10 @@ fn connection_row(
             Span::styled(format!(" {} ", type_badge), badge_style),
         ])).style(row_style),
         Cell::from(target).style(row_style),
-        Cell::from(auth_state).style(if selected {
-            Style::default().fg(auth_color).bg(SELECTED_BG)
+        Cell::from(ping_text).style(if selected {
+            Style::default().fg(ping_color).bg(SELECTED_BG)
         } else {
-            Style::default().fg(auth_color)
+            Style::default().fg(ping_color)
         }),
     ])
     .height(1)

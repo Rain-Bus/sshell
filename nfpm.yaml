@@ -1,0 +1,29 @@
+name: sshell
+arch: ${NFPM_ARCH}
+platform: linux
+version: ${NFPM_VERSION}
+section: utils
+priority: optional
+maintainer: rain-bus <rainandbus@gmail.com>
+description: |
+  A personal SSH and shell connection manager with a terminal user interface (TUI).
+  Manage SSH and local shell profiles with tagging, usage tracking, and smart sorting.
+vendor: rain-bus
+homepage: https://github.com/Rain-Bus/sshell
+license: MIT
+
+contents:
+  - src: sshell
+    dst: /usr/bin/sshell
+    file_info:
+      mode: 0755
+
+deb:
+  compression: gz
+
+rpm:
+  compression: gz
+
+archlinux:
+  pkgbase: sshell
+  packager: rain-bus <rainandbus@gmail.com>
