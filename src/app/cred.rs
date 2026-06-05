@@ -91,11 +91,7 @@ impl FormNav for CredFormState {
 
 impl TextEditing for CredFormState {
     fn active_text(&self) -> &str {
-        match self.active {
-            CredFormField::Name => &self.name,
-            CredFormField::Value => &self.value,
-            _ => "",
-        }
+        self.field_value(self.active)
     }
 
     fn active_text_mut(&mut self) -> Option<&mut String> {

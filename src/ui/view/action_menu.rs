@@ -93,7 +93,7 @@ impl View for ActionMenuView {
             ListAction::Select => {
                 app.session.mode = Mode::Home;
                 match app.session.action_menu.cursor {
-                    0 => app.enter_combined_import()?,
+                    0 => app.enter_import_selector()?,
                     1 => app.sync_with_toast(),
                     2 => app.enter_credentials(),
                     3 => app.enter_settings(),

@@ -1,6 +1,12 @@
 use super::{FormNav, TextEditing};
 use crate::config::SyncBackend;
 
+/// Trim whitespace and return None if the result is empty.
+fn trimmed_opt(s: &str) -> Option<String> {
+    let s = s.trim().to_string();
+    if s.is_empty() { None } else { Some(s) }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsField {
     SyncPassword,
@@ -128,14 +134,7 @@ impl Default for SettingsState {
 
 impl TextEditing for SettingsState {
     fn active_text(&self) -> &str {
-        match self.active {
-            SettingsField::SyncPassword => &self.password,
-            SettingsField::GistId => &self.gist_id,
-            SettingsField::WebdavUrl => &self.webdav_url,
-            SettingsField::WebdavUser => &self.webdav_user,
-            SettingsField::WebdavPassword => &self.webdav_password,
-            _ => "",
-        }
+        self.field_text(self.active)
     }
 
     fn active_text_mut(&mut self) -> Option<&mut String> {
@@ -187,22 +186,13 @@ impl App {
     }
 
     pub fn save_settings(&mut self) -> Result<()> {
-        let pw = self.session.settings.password.trim().to_string();
-        self.config.settings.sync_password = if pw.is_empty() { None } else { Some(pw) };
+        self.config.settings.sync_password = trimmed_opt(&self.session.settings.password);
         self.config.settings.backend = self.session.settings.backend;
         self.config.settings.sync_on_start = self.session.settings.sync_on_start;
-        let gist = self.session.settings.gist_id.trim().to_string();
-        self.config.settings.gist_id = if gist.is_empty() { None } else { Some(gist) };
-        let url = self.session.settings.webdav_url.trim().to_string();
-        self.config.settings.webdav_url = if url.is_empty() { None } else { Some(url) };
-        let user = self.session.settings.webdav_user.trim().to_string();
-        self.config.settings.webdav_user = if user.is_empty() { None } else { Some(user) };
-        let wd_pw = self.session.settings.webdav_password.trim().to_string();
-        self.config.settings.webdav_password = if wd_pw.is_empty() {
-            None
-        } else {
-            Some(wd_pw)
-        };
+        self.config.settings.gist_id = trimmed_opt(&self.session.settings.gist_id);
+        self.config.settings.webdav_url = trimmed_opt(&self.session.settings.webdav_url);
+        self.config.settings.webdav_user = trimmed_opt(&self.session.settings.webdav_user);
+        self.config.settings.webdav_password = trimmed_opt(&self.session.settings.webdav_password);
         self.config.save()?;
         self.session.mode = Mode::Home;
         Ok(())

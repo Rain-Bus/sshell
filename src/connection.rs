@@ -49,12 +49,9 @@ pub fn connect(name: &str, cfg: &SshellConfig) -> Result<()> {
         } => connect_ssh(cfg, host, *port, user, auth_ref),
         ConnectionType::Shell {
             command,
-            sync_args,
-            local_args,
             ..
         } => {
-            let mut merged_args = sync_args.clone();
-            merged_args.extend(local_args.clone());
+            let merged_args = profile.merged_shell_args();
             exec_shell(command, &merged_args)
         }
     }

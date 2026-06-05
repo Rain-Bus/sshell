@@ -75,32 +75,41 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
     });
 
     use view::View;
-    let (title, hints): (&str, Vec<_>) = match app.session.mode {
-        Mode::Home => (view::HomeListView.title(), view::HomeListView.hints()),
-        Mode::ActionMenu => (view::ActionMenuView.title(), view::ActionMenuView.hints()),
-        Mode::Search => (view::SearchView.title(), view::SearchView.hints()),
-        Mode::QuickSelect => (view::QuickSelectView.title(), view::QuickSelectView.hints()),
-        Mode::DeleteConfirm => (view::DeleteConfirmView.title(), view::DeleteConfirmView.hints()),
-        Mode::Form => (view::FormView.title(), view::FormView.hints()),
-        Mode::ImportSelector => (view::ImportView.title(), view::ImportView.hints()),
-        Mode::Credentials => (view::CredListView.title(), view::CredListView.hints()),
-        Mode::CredForm => (view::CredFormView.title(), view::CredFormView.hints()),
-        Mode::Settings => (view::SettingsView.title(), view::SettingsView.hints()),
+    let (title, hints): (&str, Vec<_>) = {
+        let v: &dyn View = match app.session.mode {
+            Mode::Home => &view::HomeListView,
+            Mode::ActionMenu => &view::ActionMenuView,
+            Mode::Search => &view::SearchView,
+            Mode::QuickSelect => &view::QuickSelectView,
+            Mode::DeleteConfirm => &view::DeleteConfirmView,
+            Mode::Form => &view::FormView,
+            Mode::ImportSelector => &view::ImportView,
+            Mode::Credentials => &view::CredListView,
+            Mode::CredForm => &view::CredFormView,
+            Mode::Settings => &view::SettingsView,
+        };
+        (v.title(), v.hints())
     };
 
     draw_header(frame, app, title, shell[0]);
 
     match app.session.mode {
-        Mode::Home => view::HomeListView.draw(frame, app, content),
-        Mode::ActionMenu => view::HomeListView.draw(frame, app, content),
-        Mode::Search => view::SearchView.draw(frame, app, content),
-        Mode::QuickSelect => view::QuickSelectView.draw(frame, app, content),
-        Mode::DeleteConfirm => view::DeleteConfirmView.draw(frame, app, content),
-        Mode::Form => view::FormView.draw(frame, app, content),
-        Mode::ImportSelector => view::ImportView.draw(frame, app, content),
-        Mode::Credentials => view::CredListView.draw(frame, app, content),
-        Mode::CredForm => view::CredFormView.draw(frame, app, content),
-        Mode::Settings => view::SettingsView.draw(frame, app, content),
+        Mode::Home | Mode::ActionMenu | Mode::DeleteConfirm => {
+            view::HomeListView.draw(frame, app, content)
+        }
+        _ => {
+            let v: &dyn View = match app.session.mode {
+                Mode::Search => &view::SearchView,
+                Mode::QuickSelect => &view::QuickSelectView,
+                Mode::Form => &view::FormView,
+                Mode::ImportSelector => &view::ImportView,
+                Mode::Credentials => &view::CredListView,
+                Mode::CredForm => &view::CredFormView,
+                Mode::Settings => &view::SettingsView,
+                _ => unreachable!(),
+            };
+            v.draw(frame, app, content);
+        }
     }
 
     draw_help(frame, &hints, shell[2]);

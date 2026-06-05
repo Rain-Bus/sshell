@@ -1,5 +1,5 @@
 use crate::app::{App, Mode};
-use crate::config::{ConnectionType, SyncBackend};
+use crate::config::ConnectionType;
 use anyhow::Result;
 use crossterm::{
     cursor::{Hide, Show},
@@ -26,10 +26,7 @@ pub fn run() -> Result<()> {
     let mut app = App::load()?;
 
     if app.config.settings.sync_on_start {
-        let result = match app.config.settings.backend {
-            SyncBackend::Gist => crate::sync::gist::sync(&mut app.config),
-            SyncBackend::Webdav => crate::sync::webdav::sync(&mut app.config),
-        };
+        let result = crate::sync::run_sync(&mut app.config);
         if let Err(err) = result {
             app.toast(err.to_string(), false);
         }

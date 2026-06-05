@@ -3,6 +3,7 @@ use crate::ui::component::{ListAction, handle_list_nav, panel, panel_with_subtit
 use crate::ui::{BLUE, GREEN, MUTED, SELECTED_BG, TEXT};
 
 use super::View;
+use super::{section_row, scroll_indexed_rows};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -134,21 +135,7 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
     }
 
     // Scroll to keep selected entry visible
-    let visible = area.height.saturating_sub(3) as usize;
-    if visible > 0 && !entry_row.is_empty() {
-        let sel_row = entry_row[app.session.import.cursor.min(entry_row.len() - 1)];
-        let total_rows = rows.len();
-        if total_rows > visible {
-            let scroll = if sel_row < visible / 2 {
-                0
-            } else if sel_row + visible / 2 >= total_rows {
-                total_rows.saturating_sub(visible)
-            } else {
-                sel_row - visible / 2
-            };
-            rows = rows.into_iter().skip(scroll).take(visible).collect();
-        }
-    }
+    rows = scroll_indexed_rows(rows, &entry_row, app.session.import.cursor, area.height);
 
     let table = Table::new(
         rows,
@@ -170,17 +157,6 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
     .column_spacing(0)
     .row_highlight_style(Style::default().bg(SELECTED_BG));
     frame.render_widget(table, area);
-}
-
-fn section_row(label: &str, count: usize) -> Row<'static> {
-    Row::new([
-        Cell::from(format!("  {label} ({count})"))
-            .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
-        Cell::from(""),
-        Cell::from(""),
-        Cell::from(""),
-    ])
-    .height(1)
 }
 
 // ── Key handling ───────────────────────────────────────────────

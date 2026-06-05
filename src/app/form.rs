@@ -220,19 +220,7 @@ impl FormNav for FormState {
 
 impl TextEditing for FormState {
     fn active_text(&self) -> &str {
-        match self.active {
-            FormField::Name => &self.name,
-            FormField::Host => &self.host,
-            FormField::Port => &self.port,
-            FormField::User => &self.user,
-            FormField::CredId => &self.auth_ref,
-            FormField::Secret => &self.secret,
-            FormField::Command => &self.command,
-            FormField::SyncArgs => &self.sync_args,
-            FormField::LocalArgs => &self.local_args,
-            FormField::Tags => &self.tags,
-            _ => "",
-        }
+        self.field_value(self.active)
     }
 
     fn active_text_mut(&mut self) -> Option<&mut String> {
@@ -296,14 +284,7 @@ impl App {
             self.config.deleted.insert(name.clone(), ts);
 
             if let Some(auth_ref) = profile.auth_ref() {
-                let still_used = self
-                    .config
-                    .connections
-                    .values()
-                    .any(|p| p.auth_ref() == Some(auth_ref));
-                if !still_used {
-                    self.config.credentials.entries.shift_remove(auth_ref);
-                }
+                self.config.prune_credential_if_unused(auth_ref, None);
             }
             self.config.save()?;
             self.session.home.selected = self
@@ -435,7 +416,9 @@ impl App {
 
     fn save_form_credential(&mut self, name: &str, auth_ref: &str, old_auth_ref: Option<String>) {
         if self.session.form.is_shell {
-            self.remove_unused_old_credential(name, old_auth_ref);
+            if let Some(old) = old_auth_ref {
+                self.config.prune_credential_if_unused(&old, Some(name));
+            }
         } else if !self.session.form.secret.is_empty() {
             let secret = resolve_secret(&self.session.form.secret);
             let entry = match self.session.form.auth_kind {
@@ -446,21 +429,6 @@ impl App {
                 .credentials
                 .entries
                 .insert(auth_ref.to_string(), entry);
-        }
-    }
-
-    fn remove_unused_old_credential(&mut self, editing_name: &str, old_auth_ref: Option<String>) {
-        let Some(old_auth_ref) = old_auth_ref else {
-            return;
-        };
-        let still_used = self
-            .config
-            .connections
-            .iter()
-            .filter(|(conn_name, _)| conn_name.as_str() != editing_name)
-            .any(|(_, profile)| profile.auth_ref() == Some(old_auth_ref.as_str()));
-        if !still_used {
-            self.config.credentials.entries.shift_remove(&old_auth_ref);
         }
     }
 }

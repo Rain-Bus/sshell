@@ -1,6 +1,5 @@
 use anyhow::Result;
 
-use crate::config::SyncBackend;
 use super::{App, Mode};
 
 impl App {
@@ -11,16 +10,6 @@ impl App {
     pub fn enter_action_menu(&mut self) {
         self.session.action_menu.cursor = 0;
         self.session.mode = Mode::ActionMenu;
-    }
-
-    pub fn enter_combined_import(&mut self) -> Result<()> {
-        self.session.import.candidates = crate::import::load_candidates(&self.config)?;
-        self.session.import.selected = vec![false; self.session.import.candidates.len()];
-        self.session.import.shell_candidates = self.config.local_shell_candidates();
-        self.session.import.shell_selected = vec![false; self.session.import.shell_candidates.len()];
-        self.session.import.cursor = 0;
-        self.session.mode = Mode::ImportSelector;
-        Ok(())
     }
 
     pub fn enter_quick_select(&mut self) {
@@ -64,10 +53,7 @@ impl App {
     }
 
     pub fn sync_with_toast(&mut self) {
-        let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::sync::gist::sync(&mut self.config),
-            SyncBackend::Webdav => crate::sync::webdav::sync(&mut self.config),
-        };
+        let result = crate::sync::run_sync(&mut self.config);
         match result {
             Ok(report) => self.toast(report.to_string(), true),
             Err(err) => self.toast(err.to_string(), false),

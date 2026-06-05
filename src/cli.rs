@@ -1,5 +1,5 @@
 use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
-use crate::sync::{gist, webdav};
+use crate::sync;
 use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -55,10 +55,7 @@ pub fn run() -> Result<()> {
 
 fn run_sync() -> Result<()> {
     let mut cfg = SshellConfig::load()?;
-    let report = match cfg.settings.backend {
-        SyncBackend::Gist => gist::sync(&mut cfg)?,
-        SyncBackend::Webdav => webdav::sync(&mut cfg)?,
-    };
+    let report = sync::run_sync(&mut cfg)?;
     println!("{report}");
     Ok(())
 }
@@ -143,13 +140,10 @@ fn check_connection(
         }
         ConnectionType::Shell {
             command,
-            sync_args,
-            local_args,
             ..
         } => {
             println!("type: shell");
-            let mut merged_args = sync_args.clone();
-            merged_args.extend(local_args.clone());
+            let merged_args = profile.merged_shell_args();
             println!("command: {command} {}", merged_args.join(" "));
         }
     }

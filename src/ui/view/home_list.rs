@@ -6,6 +6,7 @@ use crate::ui::component::{badge_span, draw_input, panel, tag_badge};
 use crate::ui::{ACCENT, BLUE, GREEN, MUTED, PANEL_ALT, PURPLE, RED, SELECTED_BG, TEXT, YELLOW};
 
 use super::View;
+use super::{section_row, scroll_indexed_rows};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -162,21 +163,7 @@ pub fn draw_connection_list(frame: &mut Frame<'_>, app: &App, area: Rect) {
     }
 
     // Scroll to keep selected entry visible
-    let visible = area.height.saturating_sub(3) as usize; // 2 borders + 1 header
-    if visible > 0 && !entry_row.is_empty() {
-        let sel_row = entry_row[app.session.home.selected.min(entry_row.len() - 1)];
-        let total = rows.len();
-        if total > visible {
-            let scroll = if sel_row < visible / 2 {
-                0
-            } else if sel_row + visible / 2 >= total {
-                total.saturating_sub(visible)
-            } else {
-                sel_row - visible / 2
-            };
-            rows = rows.into_iter().skip(scroll).take(visible).collect();
-        }
-    }
+    rows = scroll_indexed_rows(rows, &entry_row, app.session.home.selected, area.height);
 
     let title = if app.session.mode == Mode::QuickSelect {
         "Connections - Quick Select"
@@ -201,17 +188,6 @@ pub fn draw_connection_list(frame: &mut Frame<'_>, app: &App, area: Rect) {
     .column_spacing(0)
     .row_highlight_style(Style::default().bg(SELECTED_BG));
     frame.render_widget(table, area);
-}
-
-fn section_row(label: &str, count: usize) -> Row<'static> {
-    Row::new([
-        Cell::from(format!("  {label} ({count})"))
-            .style(Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
-        Cell::from(""),
-        Cell::from(""),
-        Cell::from(""),
-    ])
-    .height(1)
 }
 
 fn connection_row(
@@ -252,11 +228,9 @@ fn connection_row(
         }
         ConnectionType::Shell {
             command,
-            sync_args,
-            local_args,
             ..
         } => {
-            let merged_args = shell_args(sync_args, local_args);
+            let merged_args = profile.merged_shell_args();
             if merged_args.is_empty() {
                 command.clone()
             } else {
@@ -378,14 +352,12 @@ pub fn draw_detail_panel(frame: &mut Frame<'_>, app: &App, area: Rect) {
             shell_name,
             auth_ref,
             command,
-            sync_args,
-            local_args,
             sync,
             ..
         } => {
             lines.push(detail_text("Shell", shell_name));
             lines.push(detail_text("Command", command));
-            let merged_args = shell_args(sync_args, local_args);
+            let merged_args = profile.merged_shell_args();
             if !merged_args.is_empty() {
                 lines.push(detail_text("Args", &merged_args.join(" ")));
             }
@@ -435,12 +407,6 @@ fn detail_text(label: &str, value: &str) -> Line<'static> {
         Span::styled(format!("  {:<11}", label), Style::default().fg(MUTED)),
         Span::styled(value.to_string(), Style::default().fg(TEXT)),
     ])
-}
-
-fn shell_args(sync_args: &[String], local_args: &[String]) -> Vec<String> {
-    let mut out = sync_args.to_vec();
-    out.extend(local_args.iter().cloned());
-    out
 }
 
 fn detail_line(label: &str, spans: Vec<Span<'static>>) -> Line<'static> {

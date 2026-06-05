@@ -199,6 +199,19 @@ impl SshellConfig {
             .unwrap_or(0)
             + 1
     }
+
+    /// Remove a credential if it is no longer referenced by any connection.
+    /// `exclude` is an optional connection name to skip during the check (e.g. the one being renamed).
+    pub fn prune_credential_if_unused(&mut self, auth_ref: &str, exclude: Option<&str>) {
+        let still_used = self
+            .connections
+            .iter()
+            .filter(|(name, _)| Some(name.as_str()) != exclude)
+            .any(|(_, profile)| profile.auth_ref() == Some(auth_ref));
+        if !still_used {
+            self.credentials.entries.shift_remove(auth_ref);
+        }
+    }
 }
 
 impl CredentialEntry {
@@ -233,6 +246,19 @@ impl ConnectionProfile {
         match &self.kind {
             ConnectionType::Ssh { sync, .. } => *sync,
             ConnectionType::Shell { sync, .. } => *sync,
+        }
+    }
+
+    /// For Shell connections, returns the merged sync_args + local_args.
+    /// Returns an empty vec for SSH connections.
+    pub fn merged_shell_args(&self) -> Vec<String> {
+        match &self.kind {
+            ConnectionType::Shell { sync_args, local_args, .. } => {
+                let mut out = sync_args.clone();
+                out.extend(local_args.iter().cloned());
+                out
+            }
+            ConnectionType::Ssh { .. } => Vec::new(),
         }
     }
 }

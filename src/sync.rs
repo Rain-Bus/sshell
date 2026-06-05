@@ -2,6 +2,8 @@ mod crypto;
 pub mod gist;
 pub mod webdav;
 
+use crate::config::SyncBackend;
+
 use crate::config::ConnectionType;
 use crate::config::{ConnectionSource, CredentialStore, SshellConfig};
 use anyhow::{Context, Result};
@@ -197,13 +199,7 @@ pub(crate) fn bidirectional_merge(
             if let Some(profile) = removed
                 && let Some(auth_ref) = profile.auth_ref()
             {
-                let still_used = cfg
-                    .connections
-                    .values()
-                    .any(|p| p.auth_ref() == Some(auth_ref));
-                if !still_used {
-                    cfg.credentials.entries.shift_remove(auth_ref);
-                }
+                cfg.prune_credential_if_unused(auth_ref, None);
             }
             report.deleted += 1;
         }
@@ -377,4 +373,12 @@ pub(crate) fn count_synced(cfg: &SshellConfig) -> usize {
 
 pub(crate) fn to_toml_value<T: serde::Serialize>(val: &T) -> Result<toml::Value> {
     toml::Value::try_from(val).map_err(|e| anyhow::anyhow!("toml conversion failed: {e}"))
+}
+
+/// Run sync using the configured backend.
+pub fn run_sync(cfg: &mut crate::config::SshellConfig) -> Result<SyncReport> {
+    match cfg.settings.backend {
+        SyncBackend::Gist => gist::sync(cfg),
+        SyncBackend::Webdav => webdav::sync(cfg),
+    }
 }
