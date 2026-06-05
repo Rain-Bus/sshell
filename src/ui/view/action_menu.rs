@@ -16,8 +16,7 @@ use ratatui::{
 
 const ACTIONS: &[(&str, &str)] = &[
     ("Import", "scan shells & import SSH config"),
-    ("Push Sync", "upload to cloud"),
-    ("Pull Sync", "download from cloud"),
+    ("Sync", "bidirectional cloud sync"),
     ("Credentials", "manage passwords & keys"),
     ("Settings", "preferences & sync config"),
 ];
@@ -95,10 +94,9 @@ impl View for ActionMenuView {
                 app.session.mode = Mode::Home;
                 match app.session.action_menu.cursor {
                     0 => app.enter_combined_import()?,
-                    1 => app.push_sync_with_toast(),
-                    2 => app.pull_sync_with_toast(),
-                    3 => app.enter_credentials(),
-                    4 => app.enter_settings(),
+                    1 => app.sync_with_toast(),
+                    2 => app.enter_credentials(),
+                    3 => app.enter_settings(),
                     _ => {}
                 }
             }

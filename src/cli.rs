@@ -1,5 +1,5 @@
 use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
-use crate::sync::{self, gist, webdav};
+use crate::sync::{gist, webdav};
 use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -23,31 +23,12 @@ enum Command {
         name: String,
     },
     Import,
-    Sync {
-        #[command(subcommand)]
-        command: SyncCommand,
-    },
+    Sync,
     Doctor {
         name: Option<String>,
     },
     ConfigPath,
 }
-
-#[derive(Debug, Subcommand)]
-pub enum SyncCommand {
-    Push,
-    Pull {
-        #[arg(long, value_enum, default_value_t = PullStrategy::Merge)]
-        strategy: PullStrategy,
-    },
-}
-
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
-pub enum PullStrategy {
-    Merge,
-    Overwrite,
-}
-
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command.unwrap_or(Command::Tui) {
@@ -63,7 +44,7 @@ pub fn run() -> Result<()> {
             println!("imported {count} connections");
             Ok(())
         }
-        Command::Sync { command } => run_sync(command),
+        Command::Sync => run_sync(),
         Command::Doctor { name } => doctor(name),
         Command::ConfigPath => {
             println!("{}", config_path()?.display());
@@ -72,31 +53,13 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn run_sync(command: SyncCommand) -> Result<()> {
+fn run_sync() -> Result<()> {
     let mut cfg = SshellConfig::load()?;
-    let strat = |s: PullStrategy| match s {
-        PullStrategy::Merge => sync::PullStrategy::Merge,
-        PullStrategy::Overwrite => sync::PullStrategy::Overwrite,
+    let report = match cfg.settings.backend {
+        SyncBackend::Gist => gist::sync(&mut cfg)?,
+        SyncBackend::Webdav => webdav::sync(&mut cfg)?,
     };
-    match command {
-        SyncCommand::Push => match cfg.settings.backend {
-            SyncBackend::Gist => {
-                let id = gist::push(&mut cfg)?;
-                println!("pushed ({id})");
-            }
-            SyncBackend::Webdav => {
-                webdav::push(&mut cfg)?;
-                println!("pushed");
-            }
-        },
-        SyncCommand::Pull { strategy } => {
-            let count = match cfg.settings.backend {
-                SyncBackend::Gist => gist::pull_with_strategy(&mut cfg, strat(strategy))?,
-                SyncBackend::Webdav => webdav::pull_with_strategy(&mut cfg, strat(strategy))?,
-            };
-            println!("pulled {count} items");
-        }
-    }
+    println!("{report}");
     Ok(())
 }
 

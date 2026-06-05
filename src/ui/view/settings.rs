@@ -1,7 +1,7 @@
 use crate::app::{App, FormAction, Mode, SettingsField, SettingsState, char_len};
 use crate::config::SyncBackend;
 use crate::ui::component::{FormRow, badge_span};
-use crate::ui::{ACCENT, ORANGE};
+use crate::ui::{ACCENT, GREEN, MUTED, ORANGE};
 
 use super::{View, handle_form_nav};
 
@@ -40,6 +40,11 @@ impl View for SettingsView {
                     SettingsField::Backend => match settings.backend {
                         SyncBackend::Gist => badge_span("Gist", ACCENT),
                         SyncBackend::Webdav => badge_span("WebDAV", ORANGE),
+                    },
+                    SettingsField::SyncOnStart => if settings.sync_on_start {
+                        badge_span("on", GREEN)
+                    } else {
+                        badge_span("off", MUTED)
                     },
                     _ => unreachable!(),
                 };
@@ -120,6 +125,9 @@ fn settings_toggle(settings: &mut SettingsState) {
                 SyncBackend::Webdav => SyncBackend::Gist,
             };
             settings.ensure_active_visible();
+        }
+        SettingsField::SyncOnStart => {
+            settings.sync_on_start = !settings.sync_on_start;
         }
         _ => {}
     }

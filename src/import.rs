@@ -116,6 +116,7 @@ pub fn import_candidates(cfg: &mut SshellConfig, candidates: &[ImportCandidate])
                 source: ConnectionSource::Imported,
                 added_order: cfg.next_added_order(),
                 usage_count: 0,
+                modified_at: crate::config::now_epoch_secs(),
                 kind: ConnectionType::Ssh {
                     host: item.host.clone(),
                     port: item.port,

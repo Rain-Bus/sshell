@@ -1,75 +1,74 @@
 use crate::config::SshellConfig;
-use super::{PullStrategy, build_sync_payload, merge_remote};
+use super::{SyncReport, bidirectional_merge, build_sync_payload, count_synced};
 use anyhow::{Context, Result, bail};
 use reqwest::blocking::Client;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 
 const FILE_NAME: &str = "sshell-config.toml";
 
-pub fn push(cfg: &mut SshellConfig) -> Result<String> {
+pub fn sync(cfg: &mut SshellConfig) -> Result<SyncReport> {
     let url = webdav_file_url(cfg)?;
     let user = cfg
         .settings
         .webdav_user
-        .as_deref()
+        .clone()
         .context("webdav_user not set")?;
     let password = cfg
         .settings
         .webdav_password
-        .as_deref()
+        .clone()
         .context("webdav_password not set")?;
+    let client = Client::new();
 
+    // Step 1: Download remote
+    let remote_payload = {
+        let response = client
+            .get(&url)
+            .basic_auth(&user, Some(&password))
+            .header(ACCEPT, "*/*")
+            .send()?;
+        if response.status().is_success() {
+            let content = response.text()?;
+            Some(
+                toml::from_str(&content)
+                    .with_context(|| "failed to parse remote config")?,
+            )
+        } else {
+            None
+        }
+    };
+
+    // Step 2: Snapshot before merge so we can rollback on upload failure
+    let snapshot = cfg.clone();
+
+    // Step 3: Bidirectional merge (modifies cfg in memory only)
+    let report = if let Some(remote) = remote_payload {
+        bidirectional_merge(cfg, remote)?
+    } else {
+        SyncReport {
+            pushed: count_synced(cfg),
+            ..Default::default()
+        }
+    };
+
+    // Step 4: Upload merged payload
     let payload = build_sync_payload(cfg, cfg.settings.sync_password.as_deref())?;
     let content = toml::to_string_pretty(&payload)?;
-
-    let client = Client::new();
     let response = client
         .put(&url)
-        .basic_auth(user, Some(password))
+        .basic_auth(&user, Some(&password))
         .header(CONTENT_TYPE, "text/plain")
         .header(ACCEPT, "*/*")
         .body(content)
         .send()?;
-
     if !response.status().is_success() {
-        bail!("sync push failed: {}", response.status());
+        // Rollback in-memory state
+        *cfg = snapshot;
+        bail!("sync upload failed: {}", response.status());
     }
 
-    Ok(url)
-}
-
-pub fn pull_with_strategy(cfg: &mut SshellConfig, strategy: PullStrategy) -> Result<usize> {
-    let url = webdav_file_url(cfg)?;
-    let user = cfg
-        .settings
-        .webdav_user
-        .as_deref()
-        .context("webdav_user not set")?;
-    let password = cfg
-        .settings
-        .webdav_password
-        .as_deref()
-        .context("webdav_password not set")?;
-
-    let client = Client::new();
-    let response = client
-        .get(&url)
-        .basic_auth(user, Some(password))
-        .header(ACCEPT, "*/*")
-        .send()?;
-
-    if response.status() == reqwest::StatusCode::NOT_FOUND {
-        bail!("sync pull failed: remote file not found");
-    }
-    if !response.status().is_success() {
-        bail!("sync pull failed: {}", response.status());
-    }
-
-    let content = response.text()?;
-    let remote: toml::Value =
-        toml::from_str(&content).with_context(|| "failed to parse remote config")?;
-
-    merge_remote(cfg, remote, strategy)
+    cfg.save()?;
+    Ok(report)
 }
 
 fn webdav_file_url(cfg: &SshellConfig) -> Result<String> {

@@ -18,6 +18,8 @@ pub struct SshellConfig {
     pub connections: IndexMap<String, ConnectionProfile>,
     #[serde(default)]
     pub credentials: CredentialStore,
+    #[serde(default)]
+    pub deleted: IndexMap<String, u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,6 +62,8 @@ pub struct Settings {
     pub webdav_user: Option<String>,
     pub webdav_password: Option<String>,
     pub sync_password: Option<String>,
+    #[serde(default)]
+    pub sync_on_start: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,6 +75,7 @@ pub struct ConnectionProfile {
     pub source: ConnectionSource,
     pub added_order: u64,
     pub usage_count: u64,
+    pub modified_at: u64,
     #[serde(flatten)]
     pub kind: ConnectionType,
 }
@@ -129,6 +134,7 @@ impl Default for SshellConfig {
             settings: Settings::default(),
             connections: IndexMap::new(),
             credentials: CredentialStore::default(),
+            deleted: IndexMap::new(),
         }
     }
 }
@@ -290,4 +296,11 @@ fn default_shell_sync() -> bool {
 
 fn default_ssh_sync() -> bool {
     true
+}
+
+pub fn now_epoch_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }

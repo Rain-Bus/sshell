@@ -1,5 +1,5 @@
 use crate::app::{App, Mode};
-use crate::config::ConnectionType;
+use crate::config::{ConnectionType, SyncBackend};
 use anyhow::Result;
 use crossterm::{
     cursor::{Hide, Show},
@@ -24,6 +24,16 @@ pub fn run() -> Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut app = App::load()?;
+
+    if app.config.settings.sync_on_start {
+        let result = match app.config.settings.backend {
+            SyncBackend::Gist => crate::sync::gist::sync(&mut app.config),
+            SyncBackend::Webdav => crate::sync::webdav::sync(&mut app.config),
+        };
+        if let Err(err) = result {
+            app.toast(err.to_string(), false);
+        }
+    }
 
     spawn_latency_probes(&app);
 
@@ -116,10 +126,10 @@ fn spawn_latency_probes(app: &App) {
         // Re-check under lock to avoid duplicate spawns
         {
             let cache = app.session.latency.lock().unwrap();
-            if let Some(entry) = cache.get(&key) {
-                if now.duration_since(entry.checked_at) < stale_duration {
-                    continue;
-                }
+            if let Some(entry) = cache.get(&key)
+                && now.duration_since(entry.checked_at) < stale_duration
+            {
+                continue;
             }
         }
         // Mark as "in-flight" by inserting a fresh entry

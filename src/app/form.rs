@@ -292,6 +292,9 @@ impl App {
         };
         let removed = self.config.connections.shift_remove(&name);
         if let Some(profile) = removed {
+            let ts = crate::config::now_epoch_secs();
+            self.config.deleted.insert(name.clone(), ts);
+
             if let Some(auth_ref) = profile.auth_ref() {
                 let still_used = self
                     .config
@@ -367,6 +370,7 @@ impl App {
                 source,
                 added_order,
                 usage_count,
+                modified_at: crate::config::now_epoch_secs(),
                 kind: ConnectionType::Shell {
                     shell_name: shell_name_for_command(&self.session.form.command),
                     auth_ref: None,
@@ -389,6 +393,7 @@ impl App {
                 source,
                 added_order,
                 usage_count,
+                modified_at: crate::config::now_epoch_secs(),
                 kind: ConnectionType::Ssh {
                     host,
                     port,

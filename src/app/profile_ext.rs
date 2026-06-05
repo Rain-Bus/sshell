@@ -203,6 +203,7 @@ mod tests {
             source: crate::config::ConnectionSource::Manual,
             added_order: order,
             usage_count: usage,
+            modified_at: 0,
             kind: crate::config::ConnectionType::Ssh {
                 host: "h".into(),
                 port: 22,
@@ -224,6 +225,7 @@ mod tests {
             source: crate::config::ConnectionSource::Manual,
             added_order: 1,
             usage_count: 0,
+            modified_at: 0,
             kind: ConnectionType::Ssh {
                 host: "example.com".into(),
                 port: 22,
@@ -245,6 +247,7 @@ mod tests {
             source: crate::config::ConnectionSource::Manual,
             added_order: 1,
             usage_count: 0,
+            modified_at: 0,
             kind: ConnectionType::Ssh {
                 host: "example.com".into(),
                 port: 22,
@@ -265,6 +268,7 @@ mod tests {
             source: crate::config::ConnectionSource::Manual,
             added_order: 1,
             usage_count: 0,
+            modified_at: 0,
             kind: ConnectionType::Ssh {
                 host: "h".into(),
                 port: 22,

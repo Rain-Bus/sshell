@@ -5,6 +5,7 @@ use crate::config::SyncBackend;
 pub enum SettingsField {
     SyncPassword,
     Backend,
+    SyncOnStart,
     GistId,
     WebdavUrl,
     WebdavUser,
@@ -13,7 +14,7 @@ pub enum SettingsField {
 
 impl SettingsField {
     pub fn visible_fields(backend: SyncBackend) -> Vec<SettingsField> {
-        let mut fields = vec![SettingsField::SyncPassword, SettingsField::Backend];
+        let mut fields = vec![SettingsField::SyncPassword, SettingsField::Backend, SettingsField::SyncOnStart];
         match backend {
             SyncBackend::Gist => fields.push(SettingsField::GistId),
             SyncBackend::Webdav => {
@@ -31,6 +32,7 @@ impl SettingsField {
         match self {
             Self::SyncPassword => "Encrypt Pwd",
             Self::Backend => "Backend",
+            Self::SyncOnStart => "Auto Sync",
             Self::GistId => "Gist ID",
             Self::WebdavUrl => "URL",
             Self::WebdavUser => "Username",
@@ -39,7 +41,7 @@ impl SettingsField {
     }
 
     pub fn is_toggle(self) -> bool {
-        matches!(self, Self::Backend)
+        matches!(self, Self::Backend | Self::SyncOnStart)
     }
 
     pub fn is_text(self) -> bool {
@@ -51,6 +53,7 @@ impl SettingsField {
 pub struct SettingsState {
     pub password: String,
     pub backend: SyncBackend,
+    pub sync_on_start: bool,
     pub gist_id: String,
     pub webdav_url: String,
     pub webdav_user: String,
@@ -112,6 +115,7 @@ impl Default for SettingsState {
         Self {
             password: String::new(),
             backend: SyncBackend::Gist,
+            sync_on_start: false,
             gist_id: String::new(),
             webdav_url: String::new(),
             webdav_user: String::new(),
@@ -169,6 +173,7 @@ impl App {
             .clone()
             .unwrap_or_default();
         self.session.settings.backend = self.config.settings.backend;
+        self.session.settings.sync_on_start = self.config.settings.sync_on_start;
         self.session.settings.gist_id = self.config.settings.gist_id.clone().unwrap_or_default();
         self.session.settings.webdav_url =
             self.config.settings.webdav_url.clone().unwrap_or_default();
@@ -185,6 +190,7 @@ impl App {
         let pw = self.session.settings.password.trim().to_string();
         self.config.settings.sync_password = if pw.is_empty() { None } else { Some(pw) };
         self.config.settings.backend = self.session.settings.backend;
+        self.config.settings.sync_on_start = self.session.settings.sync_on_start;
         let gist = self.session.settings.gist_id.trim().to_string();
         self.config.settings.gist_id = if gist.is_empty() { None } else { Some(gist) };
         let url = self.session.settings.webdav_url.trim().to_string();

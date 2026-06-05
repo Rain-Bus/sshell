@@ -108,6 +108,7 @@ impl super::SshellConfig {
                 source: ConnectionSource::Scanned,
                 added_order: self.next_added_order(),
                 usage_count: 0,
+                modified_at: 0,
                 kind: ConnectionType::Shell {
                     shell_name: candidate.name.clone(),
                     auth_ref: None,

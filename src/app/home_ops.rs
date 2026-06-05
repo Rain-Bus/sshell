@@ -63,24 +63,13 @@ impl App {
         Ok(())
     }
 
-    pub fn push_sync_with_toast(&mut self) {
+    pub fn sync_with_toast(&mut self) {
         let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::sync::gist::push(&mut self.config).map(|id| format!("pushed ({id})")),
-            SyncBackend::Webdav => crate::sync::webdav::push(&mut self.config).map(|_| "pushed".to_string()),
+            SyncBackend::Gist => crate::sync::gist::sync(&mut self.config),
+            SyncBackend::Webdav => crate::sync::webdav::sync(&mut self.config),
         };
         match result {
-            Ok(msg) => self.toast(msg, true),
-            Err(err) => self.toast(err.to_string(), false),
-        }
-    }
-
-    pub fn pull_sync_with_toast(&mut self) {
-        let result = match self.config.settings.backend {
-            SyncBackend::Gist => crate::sync::gist::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
-            SyncBackend::Webdav => crate::sync::webdav::pull_with_strategy(&mut self.config, crate::sync::PullStrategy::Merge),
-        };
-        match result {
-            Ok(count) => self.toast(format!("pulled {count} items"), true),
+            Ok(report) => self.toast(report.to_string(), true),
             Err(err) => self.toast(err.to_string(), false),
         }
     }
