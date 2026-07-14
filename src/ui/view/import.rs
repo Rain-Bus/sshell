@@ -3,7 +3,7 @@ use crate::ui::component::{ListAction, handle_list_nav, panel, panel_with_subtit
 use crate::ui::{BLUE, GREEN, MUTED, SELECTED_BG, TEXT};
 
 use super::View;
-use super::{section_row, scroll_indexed_rows};
+use super::{scroll_indexed_rows, section_row};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -17,7 +17,9 @@ use ratatui::{
 pub struct ImportView;
 
 impl View for ImportView {
-    fn title(&self) -> &'static str { "Import" }
+    fn title(&self) -> &'static str {
+        "Import"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("j/k", "move"),
@@ -62,10 +64,19 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
     for (idx, item) in app.session.import.shell_candidates.iter().enumerate() {
         entry_row.push(rows.len());
         let selected_row = idx == app.session.import.cursor;
-        let checked = app.session.import.shell_selected.get(idx).copied().unwrap_or(false);
+        let checked = app
+            .session
+            .import
+            .shell_selected
+            .get(idx)
+            .copied()
+            .unwrap_or(false);
         let has_conflict = item.conflict.is_some();
         let style = if selected_row {
-            Style::default().bg(SELECTED_BG).fg(TEXT).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(SELECTED_BG)
+                .fg(TEXT)
+                .add_modifier(Modifier::BOLD)
         } else if has_conflict {
             Style::default().fg(MUTED)
         } else {
@@ -87,7 +98,8 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
             Style::default()
         };
         rows.push(Row::new([
-            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style.patch(check_cell_style)),
+            Cell::from(if checked { "  [x]" } else { "  [ ]" })
+                .style(check_style.patch(check_cell_style)),
             Cell::from(item.name.clone()).style(style),
             Cell::from(item.path.display().to_string()).style(style),
             Cell::from(status).style(style),
@@ -104,9 +116,18 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
     for (idx, item) in app.session.import.candidates.iter().enumerate() {
         entry_row.push(rows.len());
         let selected_row = (shell_len + idx) == app.session.import.cursor;
-        let checked = app.session.import.selected.get(idx).copied().unwrap_or(false);
+        let checked = app
+            .session
+            .import
+            .selected
+            .get(idx)
+            .copied()
+            .unwrap_or(false);
         let style = if selected_row {
-            Style::default().bg(SELECTED_BG).fg(TEXT).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(SELECTED_BG)
+                .fg(TEXT)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(TEXT)
         };
@@ -121,7 +142,8 @@ fn draw_import(frame: &mut Frame<'_>, app: &App, area: Rect) {
             Style::default()
         };
         rows.push(Row::new([
-            Cell::from(if checked { "  [x]" } else { "  [ ]" }).style(check_style.patch(check_cell_style)),
+            Cell::from(if checked { "  [x]" } else { "  [ ]" })
+                .style(check_style.patch(check_cell_style)),
             Cell::from(item.name.clone()).style(style),
             Cell::from(format!("{}@{}:{}", item.user, item.host, item.port)).style(style),
             Cell::from(
@@ -219,8 +241,11 @@ fn handle_import(app: &mut App, key: KeyEvent) -> Result<()> {
                         .get(app.session.import.cursor)
                         .is_some_and(|c| c.conflict.is_none());
                     if can_toggle
-                        && let Some(v) =
-                            app.session.import.shell_selected.get_mut(app.session.import.cursor)
+                        && let Some(v) = app
+                            .session
+                            .import
+                            .shell_selected
+                            .get_mut(app.session.import.cursor)
                     {
                         *v = !*v;
                     }

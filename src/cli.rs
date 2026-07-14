@@ -1,4 +1,6 @@
-use crate::config::{ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary};
+use crate::config::{
+    ConnectionType, CredentialEntry, SshellConfig, SyncBackend, config_path, find_binary,
+};
 use crate::sync;
 use crate::{connection, import, ui};
 use anyhow::{Context, Result, bail};
@@ -19,14 +21,10 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     Tui,
-    Connect {
-        name: String,
-    },
+    Connect { name: String },
     Import,
     Sync,
-    Doctor {
-        name: Option<String>,
-    },
+    Doctor { name: Option<String> },
     ConfigPath,
 }
 pub fn run() -> Result<()> {
@@ -138,10 +136,7 @@ fn check_connection(
                 "ssh command: ssh -o StrictHostKeyChecking=accept-new -p {port} {user}@{host}"
             );
         }
-        ConnectionType::Shell {
-            command,
-            ..
-        } => {
+        ConnectionType::Shell { command, .. } => {
             println!("type: shell");
             let merged_args = profile.merged_shell_args();
             println!("command: {command} {}", merged_args.join(" "));

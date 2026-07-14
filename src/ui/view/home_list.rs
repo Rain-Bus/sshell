@@ -1,12 +1,12 @@
-use crate::app::{App, Mode};
 use crate::app::display_name;
 use crate::app::latency::LatencyStatus;
+use crate::app::{App, Mode};
 use crate::config::{ConnectionSource, ConnectionType, CredentialEntry};
 use crate::ui::component::{badge_span, draw_input, panel, tag_badge};
 use crate::ui::{ACCENT, BLUE, GREEN, MUTED, PANEL_ALT, PURPLE, RED, SELECTED_BG, TEXT, YELLOW};
 
 use super::View;
-use super::{section_row, scroll_indexed_rows};
+use super::{scroll_indexed_rows, section_row};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -21,7 +21,9 @@ use ratatui::{
 pub struct HomeListView;
 
 impl View for HomeListView {
-    fn title(&self) -> &'static str { "Home" }
+    fn title(&self) -> &'static str {
+        "Home"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("j/k", "move"),
@@ -226,10 +228,7 @@ fn connection_row(
                 format!("{user}@{host}:{port}")
             }
         }
-        ConnectionType::Shell {
-            command,
-            ..
-        } => {
+        ConnectionType::Shell { command, .. } => {
             let merged_args = profile.merged_shell_args();
             if merged_args.is_empty() {
                 command.clone()
@@ -263,16 +262,24 @@ fn connection_row(
     };
 
     let badge_style = if selected {
-        Style::default().fg(badge_color).bg(SELECTED_BG).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(badge_color)
+            .bg(SELECTED_BG)
+            .add_modifier(Modifier::BOLD)
     } else {
-        Style::default().fg(crate::ui::BG).bg(badge_color).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(crate::ui::BG)
+            .bg(badge_color)
+            .add_modifier(Modifier::BOLD)
     };
 
     Row::new([
         Cell::from(format!("{marker} {}", display_name(name))).style(row_style),
-        Cell::from(Line::from(vec![
-            Span::styled(format!(" {} ", type_badge), badge_style),
-        ])).style(row_style),
+        Cell::from(Line::from(vec![Span::styled(
+            format!(" {} ", type_badge),
+            badge_style,
+        )]))
+        .style(row_style),
         Cell::from(target).style(row_style),
         Cell::from(ping_text).style(if selected {
             Style::default().fg(ping_color).bg(SELECTED_BG)
@@ -312,7 +319,10 @@ pub fn draw_detail_panel(frame: &mut Frame<'_>, app: &App, area: Rect) {
         Span::raw("  "),
         badge_span(badge, badge_color),
         Span::raw("  "),
-        Span::styled(display_name(name).to_string(), Style::default().fg(TEXT).bold()),
+        Span::styled(
+            display_name(name).to_string(),
+            Style::default().fg(TEXT).bold(),
+        ),
     ]));
     lines.push(Line::from(vec![
         Span::raw("  "),
@@ -466,13 +476,11 @@ fn handle_home(app: &mut App, key: KeyEvent) -> Result<()> {
 pub struct SearchView;
 
 impl View for SearchView {
-    fn title(&self) -> &'static str { "Search" }
+    fn title(&self) -> &'static str {
+        "Search"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("type", "filter"),
-            ("j/k", "move"),
-            ("Esc", "close"),
-        ]
+        vec![("type", "filter"), ("j/k", "move"), ("Esc", "close")]
     }
 
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
@@ -509,13 +517,11 @@ impl View for SearchView {
 pub struct QuickSelectView;
 
 impl View for QuickSelectView {
-    fn title(&self) -> &'static str { "Quick Select" }
+    fn title(&self) -> &'static str {
+        "Quick Select"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("1-9", "connect"),
-            ("Tab", "sort"),
-            ("Esc", "cancel"),
-        ]
+        vec![("1-9", "connect"), ("Tab", "sort"), ("Esc", "cancel")]
     }
 
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {
@@ -567,12 +573,11 @@ impl View for QuickSelectView {
 pub struct DeleteConfirmView;
 
 impl View for DeleteConfirmView {
-    fn title(&self) -> &'static str { "Delete" }
+    fn title(&self) -> &'static str {
+        "Delete"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("Y", "yes"),
-            ("N", "no"),
-        ]
+        vec![("Y", "yes"), ("N", "no")]
     }
 
     fn draw(&self, frame: &mut Frame<'_>, app: &App, area: Rect) {

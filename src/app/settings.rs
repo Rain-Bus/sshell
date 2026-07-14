@@ -20,7 +20,11 @@ pub enum SettingsField {
 
 impl SettingsField {
     pub fn visible_fields(backend: SyncBackend) -> Vec<SettingsField> {
-        let mut fields = vec![SettingsField::SyncPassword, SettingsField::Backend, SettingsField::SyncOnStart];
+        let mut fields = vec![
+            SettingsField::SyncPassword,
+            SettingsField::Backend,
+            SettingsField::SyncOnStart,
+        ];
         match backend {
             SyncBackend::Gist => fields.push(SettingsField::GistId),
             SyncBackend::Webdav => {
@@ -43,7 +47,7 @@ impl SettingsField {
             Self::WebdavUrl => "URL",
             Self::WebdavUser => "Username",
             Self::WebdavPassword => "Password",
-            }
+        }
     }
 
     pub fn is_toggle(self) -> bool {
@@ -110,10 +114,18 @@ impl SettingsState {
 }
 
 impl FormNav for SettingsState {
-    fn nav_next(&mut self) { self.next_field(); }
-    fn nav_prev(&mut self) { self.prev_field(); }
-    fn active_is_toggle(&self) -> bool { self.active.is_toggle() }
-    fn active_is_text(&self) -> bool { self.active.is_text() }
+    fn nav_next(&mut self) {
+        self.next_field();
+    }
+    fn nav_prev(&mut self) {
+        self.prev_field();
+    }
+    fn active_is_toggle(&self) -> bool {
+        self.active.is_toggle()
+    }
+    fn active_is_text(&self) -> bool {
+        self.active.is_text()
+    }
 }
 
 impl Default for SettingsState {
@@ -178,8 +190,12 @@ impl App {
             self.config.settings.webdav_url.clone().unwrap_or_default();
         self.session.settings.webdav_user =
             self.config.settings.webdav_user.clone().unwrap_or_default();
-        self.session.settings.webdav_password =
-            self.config.settings.webdav_password.clone().unwrap_or_default();
+        self.session.settings.webdav_password = self
+            .config
+            .settings
+            .webdav_password
+            .clone()
+            .unwrap_or_default();
         self.session.settings.active = SettingsField::SyncPassword;
         self.session.settings.cursor = char_len(self.session.settings.active_text());
         self.session.mode = Mode::Settings;

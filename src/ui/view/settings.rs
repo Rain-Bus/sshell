@@ -12,7 +12,9 @@ use ratatui::{Frame, layout::Rect};
 pub struct SettingsView;
 
 impl View for SettingsView {
-    fn title(&self) -> &'static str { "Settings" }
+    fn title(&self) -> &'static str {
+        "Settings"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("↑/↓", "move"),
@@ -41,11 +43,13 @@ impl View for SettingsView {
                         SyncBackend::Gist => badge_span("Gist", ACCENT),
                         SyncBackend::Webdav => badge_span("WebDAV", ORANGE),
                     },
-                    SettingsField::SyncOnStart => if settings.sync_on_start {
-                        badge_span("on", GREEN)
-                    } else {
-                        badge_span("off", MUTED)
-                    },
+                    SettingsField::SyncOnStart => {
+                        if settings.sync_on_start {
+                            badge_span("on", GREEN)
+                        } else {
+                            badge_span("off", MUTED)
+                        }
+                    }
                     _ => unreachable!(),
                 };
                 rows.push(FormRow::Toggle {
@@ -57,8 +61,7 @@ impl View for SettingsView {
                 let raw = settings.field_text(field).to_string();
                 let is_secret = matches!(
                     field,
-                    SettingsField::SyncPassword
-                        | SettingsField::WebdavPassword
+                    SettingsField::SyncPassword | SettingsField::WebdavPassword
                 );
                 let (display, secret_cursor) = if is_secret {
                     if raw.is_empty() {

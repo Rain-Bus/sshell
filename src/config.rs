@@ -253,7 +253,11 @@ impl ConnectionProfile {
     /// Returns an empty vec for SSH connections.
     pub fn merged_shell_args(&self) -> Vec<String> {
         match &self.kind {
-            ConnectionType::Shell { sync_args, local_args, .. } => {
+            ConnectionType::Shell {
+                sync_args,
+                local_args,
+                ..
+            } => {
                 let mut out = sync_args.clone();
                 out.extend(local_args.iter().cloned());
                 out

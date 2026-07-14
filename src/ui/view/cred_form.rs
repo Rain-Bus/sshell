@@ -11,7 +11,9 @@ use ratatui::{Frame, layout::Rect};
 pub struct CredFormView;
 
 impl View for CredFormView {
-    fn title(&self) -> &'static str { "Cred Editor" }
+    fn title(&self) -> &'static str {
+        "Cred Editor"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("↑/↓", "move"),
@@ -57,16 +59,17 @@ impl View for CredFormView {
                 });
             } else {
                 let raw = form.field_value(field).to_string();
-                let (display, secret_cursor) = if matches!(field, CredFormField::Value) && !raw.is_empty() {
-                    if active && matches!(form.kind, AuthKind::Password) {
-                        let d: String = "*".repeat(raw.chars().count());
-                        (d, form.cursor)
+                let (display, secret_cursor) =
+                    if matches!(field, CredFormField::Value) && !raw.is_empty() {
+                        if active && matches!(form.kind, AuthKind::Password) {
+                            let d: String = "*".repeat(raw.chars().count());
+                            (d, form.cursor)
+                        } else {
+                            ("<set>".into(), 0)
+                        }
                     } else {
-                        ("<set>".into(), 0)
-                    }
-                } else {
-                    (raw, form.cursor)
-                };
+                        (raw, form.cursor)
+                    };
                 let cursor = if active && field.is_text() {
                     secret_cursor.min(char_len(&display))
                 } else {

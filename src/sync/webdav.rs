@@ -1,5 +1,5 @@
-use crate::config::SshellConfig;
 use super::{SyncReport, bidirectional_merge, build_sync_payload, count_synced};
+use crate::config::SshellConfig;
 use anyhow::{Context, Result, bail};
 use reqwest::blocking::Client;
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
@@ -29,10 +29,7 @@ pub fn sync(cfg: &mut SshellConfig) -> Result<SyncReport> {
             .send()?;
         if response.status().is_success() {
             let content = response.text()?;
-            Some(
-                toml::from_str(&content)
-                    .with_context(|| "failed to parse remote config")?,
-            )
+            Some(toml::from_str(&content).with_context(|| "failed to parse remote config")?)
         } else {
             None
         }

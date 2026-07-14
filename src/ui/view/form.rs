@@ -11,7 +11,9 @@ use ratatui::{Frame, layout::Rect};
 pub struct FormView;
 
 impl View for FormView {
-    fn title(&self) -> &'static str { "Editor" }
+    fn title(&self) -> &'static str {
+        "Editor"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("↑/↓", "move"),

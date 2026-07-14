@@ -17,7 +17,9 @@ use ratatui::{
 pub struct CredListView;
 
 impl View for CredListView {
-    fn title(&self) -> &'static str { "Credentials" }
+    fn title(&self) -> &'static str {
+        "Credentials"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
         vec![
             ("j/k", "move"),

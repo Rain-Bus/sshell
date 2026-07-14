@@ -56,10 +56,7 @@ struct RemotePayload {
     deleted: IndexMap<String, u64>,
 }
 
-fn parse_remote_payload(
-    remote: toml::Value,
-    sync_password: Option<&str>,
-) -> Result<RemotePayload> {
+fn parse_remote_payload(remote: toml::Value, sync_password: Option<&str>) -> Result<RemotePayload> {
     let mut connections = IndexMap::new();
     if let Some(conns) = remote.get("connections").and_then(|v| v.as_table()) {
         for (name, profile_val) in conns {
@@ -124,9 +121,7 @@ pub(crate) fn bidirectional_merge(
                     report.skipped += 1;
                 }
             }
-            Some(local_profile)
-                if remote_profile.modified_at > local_profile.modified_at =>
-            {
+            Some(local_profile) if remote_profile.modified_at > local_profile.modified_at => {
                 // Remote is newer → update local (preserve local-only fields)
                 let mut p = remote_profile.clone();
                 p.local_tags = local_profile.local_tags.clone();
@@ -148,12 +143,7 @@ pub(crate) fn bidirectional_merge(
                 }
                 if let ConnectionType::Shell { .. } = &p.kind {
                     // Re-localize the shell profile for this machine
-                    let preserved = (
-                        p.local_tags.clone(),
-                        p.usage_count,
-                        p.added_order,
-                        p.source,
-                    );
+                    let preserved = (p.local_tags.clone(), p.usage_count, p.added_order, p.source);
                     if localize_shell_profile(cfg, name, &mut p) {
                         p.local_tags = preserved.0;
                         p.usage_count = preserved.1;
@@ -290,9 +280,10 @@ pub(crate) fn build_sync_payload(
         .filter_map(|(_, profile)| profile.auth_ref().map(String::from))
         .collect();
 
-    payload.credentials.entries.retain(|name, _| {
-        name != GIST_TOKEN_REF && synced_refs.iter().any(|r| r == name)
-    });
+    payload
+        .credentials
+        .entries
+        .retain(|name, _| name != GIST_TOKEN_REF && synced_refs.iter().any(|r| r == name));
 
     let encrypted = if !payload.credentials.entries.is_empty() {
         if let Some(pw) = sync_password {
@@ -365,10 +356,7 @@ pub(crate) fn build_sync_payload(
 }
 
 pub(crate) fn count_synced(cfg: &SshellConfig) -> usize {
-    cfg.connections
-        .iter()
-        .filter(|(_, p)| p.sync())
-        .count()
+    cfg.connections.iter().filter(|(_, p)| p.sync()).count()
 }
 
 pub(crate) fn to_toml_value<T: serde::Serialize>(val: &T) -> Result<toml::Value> {

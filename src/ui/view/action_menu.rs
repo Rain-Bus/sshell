@@ -24,13 +24,11 @@ const ACTIONS: &[(&str, &str)] = &[
 pub struct ActionMenuView;
 
 impl View for ActionMenuView {
-    fn title(&self) -> &'static str { "Actions" }
+    fn title(&self) -> &'static str {
+        "Actions"
+    }
     fn hints(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("j/k", "move"),
-            ("Enter", "select"),
-            ("Esc", "cancel"),
-        ]
+        vec![("j/k", "move"), ("Enter", "select"), ("Esc", "cancel")]
     }
 
     fn draw(&self, frame: &mut Frame<'_>, _app: &App, area: Rect) {

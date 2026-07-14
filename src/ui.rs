@@ -54,7 +54,12 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut crate::app::App) {
             .fg(ACCENT)
             .alignment(Alignment::Center)
             .render(
-                Rect { x: 0, y: area.height / 2, width: area.width, height: 1 },
+                Rect {
+                    x: 0,
+                    y: area.height / 2,
+                    width: area.width,
+                    height: 1,
+                },
                 frame.buffer_mut(),
             );
         return;

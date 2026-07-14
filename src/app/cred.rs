@@ -83,10 +83,18 @@ impl CredFormState {
 }
 
 impl FormNav for CredFormState {
-    fn nav_next(&mut self) { self.next_field(); }
-    fn nav_prev(&mut self) { self.prev_field(); }
-    fn active_is_toggle(&self) -> bool { self.active.is_toggle() }
-    fn active_is_text(&self) -> bool { self.active.is_text() }
+    fn nav_next(&mut self) {
+        self.next_field();
+    }
+    fn nav_prev(&mut self) {
+        self.prev_field();
+    }
+    fn active_is_toggle(&self) -> bool {
+        self.active.is_toggle()
+    }
+    fn active_is_text(&self) -> bool {
+        self.active.is_text()
+    }
 }
 
 impl TextEditing for CredFormState {

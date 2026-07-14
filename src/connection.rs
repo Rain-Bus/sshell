@@ -9,7 +9,8 @@ fn require_binary(name: &str) -> Result<()> {
         return Ok(());
     }
     let hint = match name {
-        "ssh" => "\n\
+        "ssh" => {
+            "\n\
             sshell requires `ssh` to connect via SSH.\n\
             \n\
             Install it with:\n\
@@ -18,8 +19,9 @@ fn require_binary(name: &str) -> Result<()> {
               Arch:     sudo pacman -S openssh\n\
               Fedora:   sudo dnf install openssh-clients\n\
               Windows:  Settings → Apps → Optional Features → OpenSSH Client"
-            ,
-        "sshpass" => "\n\
+        }
+        "sshpass" => {
+            "\n\
             Password-based SSH login requires `sshpass`.\n\
             Consider switching to private-key auth instead, or install it:\n\
               macOS:    brew install hudochenkov/sshpass/sshpass\n\
@@ -27,7 +29,7 @@ fn require_binary(name: &str) -> Result<()> {
               Arch:     sudo pacman -S sshpass\n\
               Fedora:   sudo dnf install sshpass\n\
               Windows:  not available — use private-key auth"
-            ,
+        }
         _ => "",
     };
     bail!("command not found: `{name}`{hint}");
@@ -47,10 +49,7 @@ pub fn connect(name: &str, cfg: &SshellConfig) -> Result<()> {
             auth_ref,
             ..
         } => connect_ssh(cfg, host, *port, user, auth_ref),
-        ConnectionType::Shell {
-            command,
-            ..
-        } => {
+        ConnectionType::Shell { command, .. } => {
             let merged_args = profile.merged_shell_args();
             exec_shell(command, &merged_args)
         }

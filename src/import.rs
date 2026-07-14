@@ -88,10 +88,9 @@ pub fn import_candidates(cfg: &mut SshellConfig, candidates: &[ImportCandidate])
             } else {
                 match key_content {
                     Some(content) => {
-                        cfg.credentials.entries.insert(
-                            auth_ref.clone(),
-                            CredentialEntry::private_key(content),
-                        );
+                        cfg.credentials
+                            .entries
+                            .insert(auth_ref.clone(), CredentialEntry::private_key(content));
                         tags.push("key".to_string());
                     }
                     None => {

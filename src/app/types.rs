@@ -251,7 +251,6 @@ impl Default for CredentialSession {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

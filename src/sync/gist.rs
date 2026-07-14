@@ -1,5 +1,5 @@
+use super::{GIST_TOKEN_REF, SyncReport, bidirectional_merge, build_sync_payload, count_synced};
 use crate::config::{CredentialEntry, SshellConfig};
-use super::{GIST_TOKEN_REF, SyncReport, build_sync_payload, bidirectional_merge, count_synced};
 use anyhow::{Context, Result, bail};
 use reqwest::blocking::Client;
 use serde_json::json;
@@ -20,9 +20,7 @@ pub fn sync(cfg: &mut SshellConfig) -> Result<SyncReport> {
         if response.status().is_success() {
             let value: serde_json::Value = response.json()?;
             if let Some(content) = value["files"][FILE_NAME]["content"].as_str() {
-                Some(
-                    toml::from_str(content).with_context(|| "failed to parse remote config")?,
-                )
+                Some(toml::from_str(content).with_context(|| "failed to parse remote config")?)
             } else {
                 None
             }

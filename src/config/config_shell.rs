@@ -1,4 +1,6 @@
-use super::{ConnectionProfile, ConnectionSource, ConnectionType, ShellCandidate, ShellScanConflict};
+use super::{
+    ConnectionProfile, ConnectionSource, ConnectionType, ShellCandidate, ShellScanConflict,
+};
 use anyhow::{Result, bail};
 #[cfg(unix)]
 use std::fs;
@@ -44,13 +46,13 @@ impl super::SshellConfig {
                 }) {
                     continue;
                 }
-                let conflict = self
-                    .connections
-                    .contains_key(&format!("${name}"))
-                    .then(|| ShellScanConflict {
-                        name: name.clone(),
-                        path: wsl_path.clone(),
-                    });
+                let conflict =
+                    self.connections
+                        .contains_key(&format!("${name}"))
+                        .then(|| ShellScanConflict {
+                            name: name.clone(),
+                            path: wsl_path.clone(),
+                        });
                 out.push(ShellCandidate {
                     name,
                     path: wsl_path.clone(),
@@ -176,7 +178,11 @@ fn local_shell_paths() -> Vec<PathBuf> {
 
     let system_root = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
     for path in [
-        PathBuf::from(&system_root).join("System32").join("WindowsPowerShell").join("v1.0").join("powershell.exe"),
+        PathBuf::from(&system_root)
+            .join("System32")
+            .join("WindowsPowerShell")
+            .join("v1.0")
+            .join("powershell.exe"),
         PathBuf::from(&system_root).join("System32").join("cmd.exe"),
     ] {
         if path.is_file() && !out.iter().any(|existing| same_file_name(existing, &path)) {
@@ -199,7 +205,8 @@ fn local_shell_paths() -> Vec<PathBuf> {
 #[cfg(not(unix))]
 fn same_file_name(a: &Path, b: &Path) -> bool {
     a.file_name().is_some_and(|a_name| {
-        b.file_name().is_some_and(|b_name| a_name.eq_ignore_ascii_case(b_name))
+        b.file_name()
+            .is_some_and(|b_name| a_name.eq_ignore_ascii_case(b_name))
     })
 }
 
@@ -252,7 +259,9 @@ fn wsl_distributions() -> Vec<String> {
     if raw.len() < 2 {
         return Vec::new();
     }
-    let u16_iter = raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]]));
+    let u16_iter = raw
+        .chunks_exact(2)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]));
     let decoded = String::from_utf16_lossy(&u16_iter.collect::<Vec<u16>>());
     decoded
         .lines()
@@ -262,4 +271,3 @@ fn wsl_distributions() -> Vec<String> {
         .filter(|line| !line.is_empty())
         .collect()
 }
-

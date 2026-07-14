@@ -46,7 +46,8 @@ impl App {
         self.session.import.candidates = crate::import::load_candidates(&self.config)?;
         self.session.import.selected = vec![false; self.session.import.candidates.len()];
         self.session.import.shell_candidates = self.config.local_shell_candidates();
-        self.session.import.shell_selected = vec![false; self.session.import.shell_candidates.len()];
+        self.session.import.shell_selected =
+            vec![false; self.session.import.shell_candidates.len()];
         self.session.import.cursor = 0;
         self.session.mode = Mode::ImportSelector;
         Ok(())

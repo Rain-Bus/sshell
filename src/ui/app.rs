@@ -132,10 +132,13 @@ fn spawn_latency_probes(app: &App) {
         // Mark as "in-flight" by inserting a fresh entry
         {
             let mut cache = app.session.latency.lock().unwrap();
-            cache.insert(key.clone(), CacheEntry {
-                status: crate::app::latency::LatencyStatus::Unknown,
-                checked_at: now,
-            });
+            cache.insert(
+                key.clone(),
+                CacheEntry {
+                    status: crate::app::latency::LatencyStatus::Unknown,
+                    checked_at: now,
+                },
+            );
         }
         let cache_clone = app.session.latency.clone();
         let host_port = key.clone();
@@ -147,10 +150,13 @@ fn spawn_latency_probes(app: &App) {
             };
             let status = crate::app::latency::probe(host, port);
             if let Ok(mut cache) = cache_clone.lock() {
-                cache.insert(host_port, CacheEntry {
-                    status,
-                    checked_at: Instant::now(),
-                });
+                cache.insert(
+                    host_port,
+                    CacheEntry {
+                        status,
+                        checked_at: Instant::now(),
+                    },
+                );
             }
         });
     }
